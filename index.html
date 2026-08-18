@@ -1,0 +1,2958 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Enzo e a Missão de Cura — Livro Interativo 3D</title>
+<meta name="description" content="Livro interativo que explica ao Enzo o que aconteceu no corpo dele, seus exames, cirurgias e a recuperação. Material educativo para o paciente e a família.">
+<meta name="theme-color" content="#081633">
+<meta name="color-scheme" content="dark light">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+
+<!-- ==========================================================================
+     ENZO E A MISSÃO DE CURA — livro interativo 3D, arquivo único.
+     Estrutura: [DADOS] [ESTILOS] [CHROME] [PÁGINAS] [MOTOR] [MÓDULOS] [3D] [INIT]
+     Não é documento oficial do Hospital Pequeno Príncipe.
+     ========================================================================== -->
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.js",
+    "three/webgpu": "https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.webgpu.js",
+    "three/tsl": "https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.tsl.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.185.1/examples/jsm/"
+  }
+}
+</script>
+
+<style>
+/* ==========================================================================
+   1. TOKENS
+   ========================================================================== */
+:root{
+  --blue-900:#0b1e46; --blue-800:#0f2a5e; --blue-700:#123a86; --blue-600:#1a52b8;
+  --blue-500:#2f6fe0; --blue-400:#5b93f0; --blue-200:#b9d3fb;
+  --gold:#ffc73d; --gold-deep:#e8a416; --red:#e2453b; --red-soft:#ff6b5e;
+  --purple:#8a4fd3; --purple-deep:#6b32b4; --green:#1f9d68; --teal:#1596ab;
+  --orange:#f0821e;
+
+  /* chrome = tudo em volta do livro */
+  --chrome-1:#eaf1fd; --chrome-2:#cfe0f8;
+  --chrome-ink:#0d2350; --chrome-ink-soft:#41598a;
+  --chrome-surface:rgba(255,255,255,.72);
+  --chrome-surface-2:rgba(255,255,255,.92);
+  --chrome-border:rgba(13,35,80,.14);
+  --chrome-shadow:0 10px 40px rgba(13,35,80,.16);
+
+  /* papel = a página do livro */
+  --paper-1:#ffffff; --paper-2:#f2f7ff;
+  --paper-ink:#16213f; --paper-ink-soft:#4d5f85;
+  --paper-line:rgba(22,33,63,.12);
+  --paper-card:rgba(240,246,255,.9);
+  --accent:var(--blue-600);
+
+  --radius-s:10px; --radius:16px; --radius-l:24px; --radius-xl:32px;
+  --font-display:ui-rounded,"SF Pro Rounded","Hiragino Maru Gothic ProN","Segoe UI Variable Display","Segoe UI",Roboto,system-ui,sans-serif;
+  --font-body:ui-rounded,"SF Pro Rounded","Segoe UI Variable Text","Segoe UI",Roboto,system-ui,sans-serif;
+  --ease:cubic-bezier(.22,.61,.36,1);
+  --turn-ms:820ms;
+  --zoom:1;
+}
+:root[data-theme="dark"]{
+  --chrome-1:#050d20; --chrome-2:#12295e;
+  --chrome-ink:#e8f0ff; --chrome-ink-soft:#9db4dd;
+  --chrome-surface:rgba(255,255,255,.07);
+  --chrome-surface-2:rgba(255,255,255,.12);
+  --chrome-border:rgba(255,255,255,.14);
+  --chrome-shadow:0 18px 60px rgba(0,0,0,.55);
+
+  --paper-1:#12203f; --paper-2:#0d1830;
+  --paper-ink:#e9f1ff; --paper-ink-soft:#a7bce0;
+  --paper-line:rgba(255,255,255,.14);
+  --paper-card:rgba(255,255,255,.06);
+  --blue-600:#5b93f0; --blue-700:#7fb0ff; --purple:#b184ec; --green:#3ec78b;
+  --red:#ff7a6e; --teal:#3cc4d8; --orange:#ffa74d;
+}
+
+/* ==========================================================================
+   2. RESET
+   ========================================================================== */
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; font-family:var(--font-body); color:var(--chrome-ink);
+  background:var(--chrome-1);
+  background-image:
+    radial-gradient(1200px 700px at 15% -10%, color-mix(in oklab,var(--chrome-2) 85%, transparent), transparent 60%),
+    radial-gradient(900px 600px at 100% 0%, color-mix(in oklab,var(--blue-700) 45%, transparent), transparent 55%),
+    linear-gradient(180deg, var(--chrome-1), var(--chrome-2) 140%);
+  background-attachment:fixed;
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  overscroll-behavior:none;
+}
+img,svg,canvas{max-width:100%;display:block}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+:focus-visible{outline:3px solid var(--gold);outline-offset:3px;border-radius:6px}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+
+/* céu estrelado do fundo (puro CSS, sempre presente mesmo sem WebGL) */
+body::before{
+  content:""; position:fixed; inset:0; pointer-events:none; z-index:0; opacity:0;
+  transition:opacity .8s ease;
+  background-image:
+    radial-gradient(1.4px 1.4px at 12% 22%, #fff, transparent),
+    radial-gradient(1.2px 1.2px at 78% 12%, #ffe9a8, transparent),
+    radial-gradient(1.6px 1.6px at 42% 68%, #fff, transparent),
+    radial-gradient(1.1px 1.1px at 88% 58%, #cfe0ff, transparent),
+    radial-gradient(1.3px 1.3px at 25% 86%, #fff, transparent),
+    radial-gradient(1.1px 1.1px at 62% 38%, #ffe9a8, transparent),
+    radial-gradient(1.5px 1.5px at 6% 54%, #fff, transparent),
+    radial-gradient(1.2px 1.2px at 95% 84%, #fff, transparent);
+}
+:root[data-theme="dark"] body::before{opacity:.85}
+
+/* ==========================================================================
+   3. LAYOUT
+   ========================================================================== */
+.app{
+  position:relative; z-index:1; min-height:100dvh;
+  display:grid; grid-template-rows:auto 1fr auto;
+  padding:clamp(8px,1.6vw,18px);
+  gap:clamp(8px,1.4vw,16px);
+}
+.bar{
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  padding:10px clamp(10px,1.6vw,18px);
+  background:var(--chrome-surface); border:1px solid var(--chrome-border);
+  border-radius:var(--radius-l); backdrop-filter:blur(14px) saturate(1.3);
+  box-shadow:var(--chrome-shadow);
+}
+.brand{display:flex;align-items:center;gap:12px;margin-right:auto;min-width:0}
+.brand-mark{
+  flex:0 0 auto; width:46px;height:46px;border-radius:14px;display:grid;place-items:center;
+  background:linear-gradient(150deg,var(--blue-500),var(--blue-700));
+  box-shadow:0 6px 18px rgba(26,82,184,.45), inset 0 1px 0 rgba(255,255,255,.35);
+  font-size:24px;
+}
+.brand-text{min-width:0}
+.brand-title{
+  font-family:var(--font-display); font-weight:800; letter-spacing:-.02em;
+  font-size:clamp(15px,2.1vw,20px); line-height:1.15;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.brand-sub{font-size:clamp(11px,1.4vw,13px);color:var(--chrome-ink-soft);line-height:1.25;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* botões do chrome */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  min-height:44px;padding:0 14px;border-radius:999px;
+  background:var(--chrome-surface-2); border:1px solid var(--chrome-border);
+  font-weight:650;font-size:14px;line-height:1;
+  transition:transform .18s var(--ease), background .18s, border-color .18s, box-shadow .18s;
+  white-space:nowrap;
+}
+.btn:hover{transform:translateY(-2px);border-color:color-mix(in oklab,var(--blue-500) 55%,transparent)}
+.btn:active{transform:translateY(0) scale(.97)}
+.btn[aria-pressed="true"],.btn.is-on{
+  background:linear-gradient(140deg,var(--blue-500),var(--blue-700));
+  color:#fff;border-color:transparent;box-shadow:0 6px 20px rgba(26,82,184,.45)
+}
+.btn-icon{min-width:44px;padding:0 10px}
+.btn-gold{background:linear-gradient(140deg,var(--gold),var(--gold-deep));color:#3d2600;border-color:transparent;
+  box-shadow:0 6px 20px rgba(232,164,22,.4)}
+.btn svg{width:18px;height:18px;flex:0 0 auto}
+.btn-group{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+
+/* ==========================================================================
+   4. PALCO E LIVRO
+   ========================================================================== */
+.stage{
+  position:relative; display:grid; place-items:center;
+  /* `size` (e não `inline-size`) porque o livro se dimensiona pela ALTURA
+     disponível — sem isto as unidades cqh não existem e o cálculo é descartado */
+  container-type:size; container-name:stage;
+  min-height:0;
+}
+/* o canvas cobre a janela toda: os mascotes flutuam nas margens e aparecem
+   por trás das barras translúcidas, dando profundidade real à página */
+#gl{
+  position:fixed; inset:0; width:100vw; height:100dvh;
+  z-index:0; pointer-events:none; opacity:0; transition:opacity 1.2s ease;
+}
+#gl.ready{opacity:1}
+
+.book-wrap{
+  position:relative; z-index:1; width:100%; height:100%;
+  display:grid; place-items:center; padding:clamp(4px,1vw,16px);
+}
+.book{
+  position:relative;
+  width:min(100%, calc((100cqh - 24px) * 1.515), 1220px);
+  aspect-ratio:2 / 1.32;
+  perspective:2600px; perspective-origin:50% 44%;
+  transform:scale(var(--zoom)); transform-origin:center center;
+  transition:transform .3s var(--ease), aspect-ratio .3s var(--ease), width .3s var(--ease);
+  touch-action:pan-y;
+}
+/* capa dura + lombada + pilha de folhas */
+.book::before{ /* capa dura por trás */
+  content:""; position:absolute; inset:-1.4% -1.1%; border-radius:14px;
+  background:linear-gradient(150deg,#16386f,#0a1e42 55%,#071531);
+  box-shadow:0 42px 90px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.18);
+  transform:translateZ(-30px);
+}
+.book::after{ /* lombada */
+  content:""; position:absolute; left:50%; top:-1%; bottom:-1%; width:22px; margin-left:-11px;
+  border-radius:6px; z-index:6; pointer-events:none;
+  background:linear-gradient(90deg,rgba(0,0,0,.42),rgba(0,0,0,.06) 28%,rgba(255,255,255,.14) 50%,rgba(0,0,0,.06) 72%,rgba(0,0,0,.42));
+}
+.book.single::after{display:none}
+.book.single{aspect-ratio:1 / 1.32; width:min(100%, calc((100cqh - 24px) * .757), 620px)}
+
+.spread{position:absolute; inset:0; transform-style:preserve-3d}
+
+/* uma folha física = duas faces */
+.leaf{
+  position:absolute; top:0; height:100%; width:50%;
+  transform-style:preserve-3d; will-change:transform;
+}
+.leaf.left{left:0; transform-origin:right center}
+.leaf.right{left:50%; transform-origin:left center}
+.book.single .leaf{width:100%;left:0}
+
+.face{
+  position:absolute; inset:0; overflow:hidden;
+  backface-visibility:hidden; -webkit-backface-visibility:hidden;
+  background:linear-gradient(160deg,var(--paper-1),var(--paper-2));
+  color:var(--paper-ink);
+  container-type:inline-size; container-name:page;
+}
+.face.back{transform:rotateY(180deg)}
+.leaf.left .face{border-radius:14px 4px 4px 14px}
+.leaf.right .face{border-radius:4px 14px 14px 4px}
+.book.single .face{border-radius:14px}
+/* sombra da dobra central + textura de papel */
+.face::after{
+  content:""; position:absolute; inset:0; pointer-events:none; z-index:5;
+  background-image:
+    linear-gradient(var(--gutter-dir,90deg), rgba(10,20,45,.20), rgba(10,20,45,.04) 7%, transparent 16%),
+    radial-gradient(120% 90% at 50% 0%, rgba(255,255,255,.35), transparent 55%);
+  mix-blend-mode:multiply; opacity:.85;
+}
+:root[data-theme="dark"] .face::after{mix-blend-mode:normal;opacity:.5}
+.leaf.right .face:not(.back){--gutter-dir:90deg}
+.leaf.left  .face:not(.back){--gutter-dir:270deg}
+
+/* pilha de folhas nas bordas */
+.book:not(.single) .spread::before,
+.book:not(.single) .spread::after{
+  content:""; position:absolute; top:1.5%; bottom:1.5%; width:10px; z-index:-1; border-radius:3px;
+  background:repeating-linear-gradient(90deg,#fff,#fff 1px,#d7e2f2 1px,#d7e2f2 2px);
+  box-shadow:0 8px 20px rgba(0,0,0,.3);
+}
+.book:not(.single) .spread::before{left:-9px}
+.book:not(.single) .spread::after{right:-9px}
+:root[data-theme="dark"] .book:not(.single) .spread::before,
+:root[data-theme="dark"] .book:not(.single) .spread::after{
+  background:repeating-linear-gradient(90deg,#2b3f66,#2b3f66 1px,#16233f 1px,#16233f 2px)
+}
+
+/* setas de navegação */
+.nav-arrow{
+  position:absolute; top:50%; translate:0 -50%; z-index:12;
+  width:clamp(44px,4.4cqi,60px); aspect-ratio:1; border-radius:50%;
+  display:grid; place-items:center;
+  background:linear-gradient(150deg,var(--blue-500),var(--blue-700)); color:#fff;
+  box-shadow:0 10px 28px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.4);
+  transition:transform .2s var(--ease), opacity .2s;
+}
+.nav-arrow:hover{transform:translate(0,0) scale(1.09)}
+.nav-arrow.prev{left:clamp(-26px,-2.2cqi,-8px)}
+.nav-arrow.next{right:clamp(-26px,-2.2cqi,-8px)}
+.nav-arrow[disabled]{opacity:.25;pointer-events:none}
+.nav-arrow svg{width:46%;height:46%}
+
+/* alça de arrastar o canto */
+.corner{
+  position:absolute; bottom:0; right:0; width:15%; height:22%; z-index:11;
+  cursor:grab; touch-action:none;
+  background:linear-gradient(315deg, rgba(255,255,255,.85) 0 42%, transparent 42%);
+  opacity:0; transition:opacity .25s;
+  border-radius:0 0 14px 0;
+  box-shadow:-6px -6px 18px rgba(0,0,0,.18) inset;
+}
+.face:not(.back):hover > .corner{opacity:.55}
+.corner:active{cursor:grabbing}
+:root[data-theme="dark"] .corner{background:linear-gradient(315deg, rgba(120,160,230,.5) 0 42%, transparent 42%)}
+
+/* ==========================================================================
+   5. TIPOGRAFIA DA PÁGINA  (tudo em cqi → escala com o tamanho do livro)
+   ========================================================================== */
+.pg{
+  position:absolute; inset:0; overflow:auto; overscroll-behavior:contain;
+  padding:7cqi 6.4cqi 6cqi;
+  font-size:4.05cqi; line-height:1.5;
+  scrollbar-width:thin;
+}
+.pg.can-scroll{
+  -webkit-mask-image:linear-gradient(#000 calc(100% - 7cqi), transparent);
+  mask-image:linear-gradient(#000 calc(100% - 7cqi), transparent);
+}
+.pg.can-scroll.at-end{-webkit-mask-image:none;mask-image:none}
+.pg::-webkit-scrollbar{width:6px}
+.pg::-webkit-scrollbar-thumb{background:var(--paper-line);border-radius:99px}
+.pg-num{
+  position:absolute; top:4cqi; left:6.4cqi; z-index:2;
+  width:8.4cqi;height:8.4cqi;border-radius:2.6cqi; display:grid;place-items:center;
+  font-family:var(--font-display); font-weight:800; font-size:4.4cqi; color:#fff;
+  background:linear-gradient(145deg,var(--blue-500),var(--blue-700));
+  box-shadow:0 .8cqi 2.4cqi rgba(26,82,184,.42), inset 0 1px 0 rgba(255,255,255,.4);
+}
+.pg h2{
+  font-family:var(--font-display); font-weight:850; letter-spacing:-.02em;
+  font-size:6.4cqi; line-height:1.06; margin:0 0 3.4cqi;
+  padding-left:11cqi; min-height:8.4cqi; display:flex; align-items:center;
+  color:var(--blue-700); text-transform:uppercase;
+}
+.pg h3{font-family:var(--font-display);font-weight:800;font-size:4.5cqi;margin:0 0 1.4cqi;color:var(--blue-700)}
+.pg p{margin:0 0 2.4cqi; max-width:62ch}
+.pg strong{color:var(--purple);font-weight:800}
+.pg em{font-style:italic}
+.lead{font-size:4.35cqi}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:4cqi;align-items:start}
+@container page (max-width:340px){ .cols{grid-template-columns:1fr} }
+
+/* cartões, listas e selos */
+.card{
+  background:var(--paper-card); border:1px solid var(--paper-line);
+  border-radius:3.4cqi; padding:3.4cqi; margin:0 0 3cqi;
+}
+.tint{border-left:1.2cqi solid var(--accent)}
+.icon-list{list-style:none;margin:0;padding:0;display:grid;gap:2.2cqi}
+.icon-list li{display:flex;gap:2.6cqi;align-items:flex-start;line-height:1.35}
+.bullet{
+  flex:0 0 auto;width:7.4cqi;height:7.4cqi;border-radius:2.3cqi;display:grid;place-items:center;
+  font-size:3.6cqi;color:#fff;box-shadow:0 .5cqi 1.6cqi rgba(0,0,0,.2), inset 0 1px 0 rgba(255,255,255,.35);
+  background:linear-gradient(145deg,var(--blue-500),var(--blue-700));
+}
+.b-purple{background:linear-gradient(145deg,#a86ae6,var(--purple-deep))}
+.b-red{background:linear-gradient(145deg,#f2705f,#c02c22)}
+.b-orange{background:linear-gradient(145deg,#ffab4d,#e06f0a)}
+.b-green{background:linear-gradient(145deg,#4fd39a,#137a4f)}
+.b-teal{background:linear-gradient(145deg,#4fd0e6,#0d7c8e)}
+.b-gold{background:linear-gradient(145deg,#ffd96b,var(--gold-deep));color:#3d2600}
+
+.mission{
+  display:flex;gap:3cqi;align-items:center;
+  background:linear-gradient(140deg,#fff6dd,#ffeab8);
+  border:.5cqi solid var(--gold); border-radius:3.4cqi; padding:3cqi 3.4cqi; color:#4a3208;
+  box-shadow:0 1cqi 3cqi rgba(232,164,22,.28);
+}
+:root[data-theme="dark"] .mission{background:linear-gradient(140deg,#4a3a12,#3a2c0b);color:#ffe9b8}
+.mission-title{font-family:var(--font-display);font-weight:850;text-transform:uppercase;font-size:3.6cqi;letter-spacing:.02em}
+
+.quote{
+  border-radius:3.4cqi; padding:3.4cqi; text-align:center; font-size:4.6cqi;
+  font-family:var(--font-display); font-weight:800; line-height:1.25;
+  background:linear-gradient(140deg,var(--blue-600),var(--blue-800)); color:#fff;
+  box-shadow:0 1.4cqi 3.4cqi rgba(11,30,70,.4);
+}
+.chips{display:flex;flex-wrap:wrap;gap:1.8cqi;margin:0 0 3cqi;padding:0;list-style:none}
+.chip{
+  display:inline-flex;align-items:center;gap:1.4cqi;
+  padding:1.4cqi 2.6cqi;border-radius:99px;font-size:3.4cqi;font-weight:700;
+  background:color-mix(in oklab,var(--accent) 14%,transparent);
+  border:1px solid color-mix(in oklab,var(--accent) 34%,transparent); color:var(--accent);
+}
+.eq{display:flex;align-items:center;justify-content:center;gap:2.4cqi;flex-wrap:wrap;text-align:center}
+.eq-item{display:grid;gap:1cqi;justify-items:center;min-width:20cqi}
+.eq-op{font-size:6cqi;font-weight:800;color:var(--paper-ink-soft)}
+.eq-name{font-family:var(--font-display);font-weight:850;font-size:3.4cqi;text-transform:uppercase;color:var(--blue-700)}
+.eq-desc{font-size:2.9cqi;color:var(--paper-ink-soft)}
+.orb{
+  width:15cqi;height:15cqi;border-radius:50%;display:grid;place-items:center;font-size:7cqi;
+  background:radial-gradient(circle at 32% 28%, #fff8, transparent 60%), linear-gradient(150deg,var(--blue-500),var(--blue-800));
+  box-shadow:0 1.2cqi 3cqi rgba(0,0,0,.3), inset 0 -1cqi 2cqi rgba(0,0,0,.25);
+}
+.orb.p{background:radial-gradient(circle at 32% 28%,#fff8,transparent 60%),linear-gradient(150deg,#a86ae6,#59239c)}
+.orb.r{background:radial-gradient(circle at 32% 28%,#fff8,transparent 60%),linear-gradient(150deg,#ff8b7d,#b32418)}
+.orb.g{background:radial-gradient(circle at 32% 28%,#fff8,transparent 60%),linear-gradient(150deg,#5ddba4,#0f6b45)}
+</style>
+<style>
+/* ==========================================================================
+   6. MÓDULOS DENTRO DA PÁGINA
+   ========================================================================== */
+
+/* --- linha do tempo (p.2) --- */
+.timeline{list-style:none;margin:0 0 3cqi;padding:0;display:grid;gap:0}
+.timeline li{display:flex;gap:2.8cqi;align-items:flex-start;position:relative;padding-bottom:3cqi}
+.timeline li:not(:last-child)::before{
+  content:"";position:absolute;left:3.7cqi;top:7.4cqi;bottom:0;width:.7cqi;margin-left:-.35cqi;
+  background:linear-gradient(var(--blue-400),transparent);border-radius:99px
+}
+.timeline .bullet{transition:transform .5s var(--ease)}
+.timeline li.lit .bullet{transform:scale(1.14)}
+
+/* --- lupa da bactéria (p.3) --- */
+.lens-lab{position:relative;height:34cqi;border-radius:3.4cqi;overflow:hidden;margin-bottom:3cqi;
+  background:radial-gradient(circle at 50% 45%,#dfeaff,#b9cdf0);border:1px solid var(--paper-line);
+  touch-action:none;cursor:crosshair}
+:root[data-theme="dark"] .lens-lab{background:radial-gradient(circle at 50% 45%,#1c2f57,#0e1b36)}
+.lens-lab .germ{position:absolute;width:9cqi;height:9cqi;border-radius:50%;
+  background:radial-gradient(circle at 34% 30%,#c79bf5,#7a37c9 62%,#4a1a86);
+  box-shadow:0 .6cqi 1.6cqi rgba(0,0,0,.35), inset 0 -.8cqi 1.4cqi rgba(0,0,0,.35)}
+.lens-lab .germ::after{content:"";position:absolute;inset:-22%;border-radius:50%;
+  background:conic-gradient(from 0deg,transparent 0 6%,#7a37c9 6% 8%,transparent 8% 14%,#7a37c9 14% 16%,transparent 16% 22%,#7a37c9 22% 24%,transparent 24% 30%,#7a37c9 30% 32%,transparent 32% 39%,#7a37c9 39% 41%,transparent 41% 47%,#7a37c9 47% 49%,transparent 49% 56%,#7a37c9 56% 58%,transparent 58% 64%,#7a37c9 64% 66%,transparent 66% 72%,#7a37c9 72% 74%,transparent 74% 81%,#7a37c9 81% 83%,transparent 83% 89%,#7a37c9 89% 91%,transparent 91%);
+  mask:radial-gradient(circle,transparent 58%,#000 58%);opacity:.9}
+.lens{position:absolute;width:26cqi;height:26cqi;border-radius:50%;pointer-events:none;
+  border:1.4cqi solid #6b4a2b;
+  box-shadow:0 1.6cqi 3.4cqi rgba(0,0,0,.4), inset 0 0 3cqi rgba(255,255,255,.6);
+  background:radial-gradient(circle at 34% 28%,rgba(255,255,255,.55),rgba(190,220,255,.18) 45%,rgba(120,170,240,.1));
+  backdrop-filter:blur(0px) saturate(1.5) brightness(1.06);
+  translate:-50% -50%;transition:opacity .3s}
+.lens::after{content:"";position:absolute;inset:-1.4cqi;border-radius:50%;
+  border:.5cqi solid rgba(255,255,255,.35)}
+.hint{font-size:3cqi;color:var(--paper-ink-soft);text-align:center;margin:-1.6cqi 0 2.6cqi}
+
+/* --- mapa corporal (p.5) --- */
+.map-views{display:grid;grid-template-columns:1fr 1fr;gap:3cqi;margin-bottom:3cqi}
+@container page (max-width:330px){.map-views{grid-template-columns:1fr}}
+.map-view{background:var(--paper-card);border:1px solid var(--paper-line);border-radius:3cqi;padding:2.4cqi 1.4cqi 1.6cqi}
+.map-view h4{margin:0 0 1.4cqi;text-align:center;font-family:var(--font-display);font-weight:850;
+  font-size:3.1cqi;text-transform:uppercase;letter-spacing:.04em;color:var(--blue-700)}
+.map-view svg{width:100%;height:46cqi;display:block;overflow:visible}
+.body-fill{fill:#c9dcf5;stroke:#7b9dc9;stroke-width:1.6}
+.body-limb{fill:none;stroke:#c9dcf5;stroke-width:15;stroke-linecap:round;stroke-linejoin:round}
+:root[data-theme="dark"] .body-fill{fill:#2a4373;stroke:#5a7dae}
+:root[data-theme="dark"] .body-limb{stroke:#2a4373}
+.site text{font-size:6.4px;font-weight:800;fill:#fff;text-anchor:middle;dominant-baseline:central;
+  pointer-events:none;paint-order:stroke}
+.site{cursor:pointer;transition:transform .2s var(--ease)}
+.site:hover,.site:focus-visible{transform:scale(1.18)}
+.site circle,.site rect,.site path{transition:filter .2s}
+.site:hover circle,.site:hover rect{filter:drop-shadow(0 0 6px currentColor)}
+.site.sel .halo{opacity:1}
+.halo{opacity:0;transition:opacity .2s}
+/* categorias — cor + forma + rótulo, nunca só cor */
+.cat-osseo{color:#d8342a;fill:#d8342a;stroke:#8d1810}
+.cat-artic{color:#e07d10;fill:#e07d10;stroke:#8c4a00}
+.cat-acomp{color:#1a7fd4;fill:none;stroke:#1a7fd4;stroke-dasharray:3 2.2;stroke-width:2.2}
+.cat-cir{fill:none;stroke:#ffffff;stroke-width:2}
+:root[data-theme="dark"] .cat-cir{stroke:#0b1730}
+.map-legend{list-style:none;margin:0 0 2.4cqi;padding:0;display:grid;gap:1.6cqi;font-size:3.1cqi}
+.map-legend li{display:flex;gap:2cqi;align-items:flex-start;line-height:1.3}
+.map-legend svg{flex:0 0 auto;width:5.4cqi;height:5.4cqi;margin-top:-.2cqi}
+.map-note{font-size:2.9cqi;color:var(--paper-ink-soft);line-height:1.4}
+.map-readout{
+  min-height:11cqi;border-radius:3cqi;padding:2.4cqi 3cqi;font-size:3.3cqi;line-height:1.35;
+  background:color-mix(in oklab,var(--blue-500) 12%,transparent);
+  border:1px dashed color-mix(in oklab,var(--blue-500) 42%,transparent);
+}
+.map-readout b{display:block;font-family:var(--font-display);font-size:3.7cqi;margin-bottom:.6cqi}
+.map-readout .tag{display:inline-block;margin-top:1cqi;padding:.6cqi 1.8cqi;border-radius:99px;
+  font-size:2.7cqi;font-weight:800;background:currentColor}
+.map-readout .tag span{color:#fff;mix-blend-mode:normal}
+
+/* --- gráfico PCR (p.17) --- */
+.chart-box{position:relative;background:var(--paper-card);border:1px solid var(--paper-line);
+  border-radius:3cqi;padding:2.6cqi;margin-bottom:3cqi}
+.chart-box canvas{width:100%;height:auto;display:block;touch-action:none}
+.chart-tip{position:absolute;pointer-events:none;opacity:0;transform:translate(-50%,-120%);
+  background:var(--blue-800);color:#fff;padding:1.2cqi 2cqi;border-radius:1.8cqi;font-size:2.9cqi;
+  font-weight:700;white-space:nowrap;transition:opacity .15s;box-shadow:0 .8cqi 2cqi rgba(0,0,0,.35);z-index:3}
+.chart-tip.on{opacity:1}
+
+/* --- checklist / quiz / fases --- */
+.check{list-style:none;margin:0 0 3cqi;padding:0;display:grid;gap:1.8cqi}
+.check li{margin:0}
+.check label{
+  display:flex;gap:2.4cqi;align-items:center;cursor:pointer;
+  background:var(--paper-card);border:1px solid var(--paper-line);
+  border-radius:2.6cqi;padding:2.2cqi 2.8cqi;transition:background .2s,border-color .2s,transform .15s var(--ease);
+  min-height:11cqi;
+}
+.check label:hover{transform:translateX(.8cqi);border-color:color-mix(in oklab,var(--green) 50%,transparent)}
+.check input{position:absolute;opacity:0;width:0;height:0}
+.check .box{
+  flex:0 0 auto;width:6.6cqi;height:6.6cqi;border-radius:2cqi;display:grid;place-items:center;
+  border:.6cqi solid color-mix(in oklab,var(--green) 55%,transparent);
+  color:transparent;font-size:3.6cqi;font-weight:900;transition:all .22s var(--ease)
+}
+.check input:checked ~ .box{background:linear-gradient(145deg,#4fd39a,var(--green));border-color:transparent;color:#fff;transform:scale(1.06)}
+.check input:checked ~ .txt{text-decoration:line-through;opacity:.62}
+.check input:focus-visible ~ .box{outline:3px solid var(--gold);outline-offset:2px}
+.progress{display:flex;align-items:center;gap:2.4cqi;margin-bottom:2.6cqi;font-size:3.2cqi;font-weight:700}
+.progress-track{flex:1;height:2.6cqi;border-radius:99px;background:var(--paper-line);overflow:hidden}
+.progress-fill{height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,#4fd39a,var(--green));
+  transition:width .5s var(--ease)}
+
+.quiz{display:grid;gap:2.6cqi;margin-bottom:3cqi}
+.q{background:var(--paper-card);border:1px solid var(--paper-line);border-radius:3cqi;padding:2.8cqi}
+.q-title{font-family:var(--font-display);font-weight:800;font-size:3.7cqi;margin:0 0 2cqi;color:var(--blue-700)}
+.q-opts{display:grid;gap:1.4cqi}
+.q-opt{
+  text-align:left;display:flex;gap:2cqi;align-items:center;min-height:11cqi;
+  padding:2cqi 2.6cqi;border-radius:2.4cqi;font-size:3.3cqi;font-weight:600;
+  background:var(--paper-1);border:.4cqi solid var(--paper-line);
+  transition:transform .16s var(--ease),border-color .2s,background .2s
+}
+.q-opt:hover:not(:disabled){transform:translateX(.8cqi);border-color:var(--blue-400)}
+.q-opt .mark{flex:0 0 auto;width:5.6cqi;height:5.6cqi;border-radius:50%;display:grid;place-items:center;
+  background:var(--paper-line);font-weight:900;font-size:3cqi}
+.q-opt.right{border-color:var(--green);background:color-mix(in oklab,var(--green) 15%,transparent)}
+.q-opt.right .mark{background:var(--green);color:#fff}
+.q-opt.almost{border-color:var(--orange);background:color-mix(in oklab,var(--orange) 15%,transparent)}
+.q-opt.almost .mark{background:var(--orange);color:#fff}
+.q-fb{margin:2cqi 0 0;font-size:3.2cqi;line-height:1.4;border-radius:2cqi;padding:2cqi 2.4cqi;display:none}
+.q-fb.on{display:block}
+.q-fb.ok{background:color-mix(in oklab,var(--green) 14%,transparent);color:var(--green)}
+.q-fb.hm{background:color-mix(in oklab,var(--orange) 14%,transparent);color:var(--orange)}
+.quiz-score{font-family:var(--font-display);font-weight:850;font-size:4cqi;text-align:center;
+  padding:2.6cqi;border-radius:3cqi;background:linear-gradient(140deg,var(--gold),var(--gold-deep));color:#3d2600}
+
+.phases{display:grid;grid-template-columns:repeat(4,1fr);gap:1.6cqi;margin-bottom:3cqi;position:relative}
+.phase{
+  background:var(--paper-card);border:1px solid var(--paper-line);border-radius:2.6cqi;
+  padding:2.4cqi 1.4cqi;text-align:center;display:grid;gap:1cqi;justify-items:center;
+  transition:transform .2s var(--ease),border-color .2s
+}
+.phase:hover{transform:translateY(-.8cqi)}
+.phase.done{border-color:var(--green);background:color-mix(in oklab,var(--green) 12%,transparent)}
+.phase-dot{width:6.4cqi;height:6.4cqi;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:3cqi;
+  background:linear-gradient(145deg,#4fd39a,var(--green));box-shadow:0 .5cqi 1.4cqi rgba(0,0,0,.22)}
+.phase-name{font-family:var(--font-display);font-weight:850;font-size:2.9cqi;text-transform:uppercase;color:var(--blue-700)}
+.phase-desc{font-size:2.7cqi;color:var(--paper-ink-soft);line-height:1.25}
+
+/* --- cartões de exame viráveis (p.10) --- */
+.flips{display:grid;grid-template-columns:1fr 1fr;gap:2.4cqi;margin-bottom:3cqi}
+.flip{perspective:900px;aspect-ratio:1.42;border:0;padding:0;background:none}
+.flip-in{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .6s var(--ease)}
+.flip[aria-pressed="true"] .flip-in{transform:rotateY(180deg)}
+.flip-f,.flip-b{position:absolute;inset:0;border-radius:2.6cqi;padding:2.4cqi;display:grid;
+  place-content:center;justify-items:center;gap:1.2cqi;text-align:center;backface-visibility:hidden;
+  border:1px solid var(--paper-line);box-shadow:0 .8cqi 2.2cqi rgba(0,0,0,.16)}
+.flip-f{background:linear-gradient(150deg,var(--paper-1),var(--paper-2))}
+.flip-b{background:linear-gradient(150deg,var(--blue-600),var(--blue-800));color:#fff;transform:rotateY(180deg);
+  font-size:3cqi;line-height:1.35}
+.flip-name{font-family:var(--font-display);font-weight:850;font-size:3.3cqi;text-transform:uppercase;color:var(--blue-700)}
+.flip-ico{font-size:8cqi;line-height:1}
+
+/* --- meu espaço (p.21) --- */
+.moods{display:flex;gap:2cqi;flex-wrap:wrap;margin-bottom:3cqi;padding:0;list-style:none}
+.mood{
+  width:13cqi;height:13cqi;border-radius:50%;font-size:6.4cqi;display:grid;place-items:center;
+  background:var(--paper-card);border:.5cqi solid var(--paper-line);
+  transition:transform .2s var(--ease),border-color .2s,background .2s
+}
+.mood:hover{transform:scale(1.1)}
+.mood[aria-pressed="true"]{border-color:var(--gold);background:color-mix(in oklab,var(--gold) 26%,transparent);transform:scale(1.12)}
+.field{margin-bottom:2.8cqi}
+.field label{display:block;font-family:var(--font-display);font-weight:800;font-size:3.4cqi;
+  margin-bottom:1.2cqi;color:var(--blue-700)}
+.field textarea{
+  width:100%;min-height:16cqi;resize:vertical;font:inherit;font-size:3.4cqi;line-height:1.5;
+  padding:2.4cqi;border-radius:2.6cqi;color:var(--paper-ink);
+  background:repeating-linear-gradient(var(--paper-1),var(--paper-1) calc(1.5em - 1px),var(--paper-line) calc(1.5em - 1px),var(--paper-line) 1.5em);
+  border:1px solid var(--paper-line);
+}
+.field textarea:focus{outline:3px solid var(--gold);outline-offset:2px}
+.saved{font-size:2.9cqi;color:var(--green);font-weight:700;opacity:0;transition:opacity .3s}
+.saved.on{opacity:1}
+
+/* --- bateria (p.12) e força (p.19) --- */
+.battery{display:flex;align-items:center;gap:2.4cqi;margin-bottom:3cqi}
+.battery-body{flex:1;height:9cqi;border-radius:2.2cqi;border:.7cqi solid var(--paper-ink-soft);
+  padding:.7cqi;display:flex;overflow:hidden}
+.battery-cap{width:1.8cqi;height:4cqi;border-radius:0 1cqi 1cqi 0;background:var(--paper-ink-soft)}
+.battery-fill{height:100%;border-radius:1.4cqi;width:26%;
+  background:linear-gradient(90deg,#e2453b,#f0821e 55%,#ffc73d);transition:width 1.4s var(--ease)}
+.battery.full .battery-fill{width:88%;background:linear-gradient(90deg,#4fd39a,#1f9d68)}
+
+/* --- selo final --- */
+.seal{display:grid;justify-items:center;gap:2cqi;text-align:center;margin-top:2cqi}
+.seal-badge{
+  width:26cqi;height:26cqi;border-radius:50%;display:grid;place-items:center;font-size:12cqi;
+  background:radial-gradient(circle at 34% 28%,#fff6,transparent 55%),linear-gradient(150deg,var(--gold),var(--gold-deep));
+  box-shadow:0 2cqi 4cqi rgba(232,164,22,.45), inset 0 -1.4cqi 2.6cqi rgba(0,0,0,.2);
+  animation:pulse 3.2s var(--ease) infinite
+}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.045)}}
+
+/* slot de arte 3D (troque pelo PNG do render) */
+.art{
+  position:relative;border-radius:3cqi;overflow:hidden;margin:0 0 3cqi;aspect-ratio:1.5;
+  background:radial-gradient(circle at 50% 30%,color-mix(in oklab,var(--blue-500) 26%,transparent),transparent 62%),
+             linear-gradient(160deg,var(--paper-2),var(--paper-card));
+  border:1px dashed var(--paper-line);display:grid;place-items:center;
+}
+.art img{width:100%;height:100%;object-fit:cover}
+.art canvas{width:100%;height:100%}
+.art .art-ph{display:grid;justify-items:center;gap:1cqi;font-size:2.9cqi;color:var(--paper-ink-soft);text-align:center;padding:2cqi}
+.art .art-ph .em{font-size:11cqi;line-height:1}
+.art.has-img .art-ph,.art.has-3d .art-ph{display:none}
+
+/* ==========================================================================
+   7. CHROME: miniaturas, barra inferior, painéis
+   ========================================================================== */
+.thumbs{
+  display:flex;gap:10px;overflow-x:auto;padding:10px;scroll-snap-type:x mandatory;
+  scrollbar-width:thin;
+}
+.thumb{
+  flex:0 0 auto;width:88px;scroll-snap-align:center;border-radius:12px;overflow:hidden;
+  border:2px solid transparent;background:var(--chrome-surface-2);
+  transition:transform .2s var(--ease),border-color .2s;position:relative;
+  padding:8px 6px;text-align:left;
+}
+.thumb:hover{transform:translateY(-4px)}
+.thumb[aria-current="true"]{border-color:var(--gold);box-shadow:0 6px 18px rgba(232,164,22,.35)}
+.thumb-n{font-family:var(--font-display);font-weight:850;font-size:11px;color:var(--blue-600)}
+.thumb-t{font-size:10px;line-height:1.2;color:var(--chrome-ink-soft);
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.thumb .fav{position:absolute;top:4px;right:5px;font-size:10px;opacity:0}
+.thumb.is-fav .fav{opacity:1}
+
+.counter{
+  font-family:var(--font-display);font-weight:800;font-size:15px;
+  padding:0 16px;min-height:44px;display:grid;place-items:center;
+  background:var(--chrome-surface-2);border:1px solid var(--chrome-border);border-radius:99px;
+  min-width:104px;text-align:center
+}
+.slider{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:650}
+input[type=range]{accent-color:var(--blue-500);width:110px;height:44px}
+
+.panel{
+  position:fixed;inset:auto 0 0 0;z-index:60;max-height:82dvh;overflow:auto;
+  background:var(--chrome-1);border-top:1px solid var(--chrome-border);
+  border-radius:var(--radius-xl) var(--radius-xl) 0 0;padding:18px clamp(14px,3vw,28px) 28px;
+  box-shadow:0 -20px 60px rgba(0,0,0,.4);
+  translate:0 100%;transition:translate .35s var(--ease);
+}
+.panel[open]{translate:0 0}
+.panel::backdrop{background:rgba(4,10,24,.6);backdrop-filter:blur(3px)}
+.panel h2{font-family:var(--font-display);margin:0 0 6px;font-size:22px}
+.panel p{margin:0 0 12px;color:var(--chrome-ink-soft);line-height:1.5;max-width:70ch}
+.panel-close{position:absolute;top:14px;right:14px}
+.toc{list-style:none;margin:0;padding:0;display:grid;gap:6px;
+  grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+.toc button{display:flex;gap:10px;align-items:center;width:100%;text-align:left;padding:11px 13px;
+  border-radius:12px;background:var(--chrome-surface);border:1px solid var(--chrome-border);
+  font-size:14px;min-height:44px;transition:transform .16s var(--ease),border-color .2s}
+.toc button:hover{transform:translateX(4px);border-color:var(--blue-400)}
+.toc .n{flex:0 0 auto;width:26px;height:26px;border-radius:9px;display:grid;place-items:center;
+  background:var(--blue-600);color:#fff;font-weight:800;font-size:12px}
+.how{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:8px}
+.how div{background:var(--chrome-surface);border:1px solid var(--chrome-border);border-radius:14px;
+  padding:14px;display:grid;gap:6px;justify-items:center;text-align:center;font-size:13px;line-height:1.35}
+.how .em{font-size:26px}
+
+.toast{
+  position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 22px);translate:-50% 0;z-index:80;
+  background:var(--blue-800);color:#fff;padding:12px 20px;border-radius:99px;font-weight:700;font-size:14px;
+  box-shadow:0 12px 34px rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .25s,translate .25s
+}
+.toast.on{opacity:1;translate:-50% -8px}
+
+.foot{
+  display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;
+  font-size:12px;color:var(--chrome-ink-soft);text-align:center;padding:4px 8px;line-height:1.45
+}
+
+/* ==========================================================================
+   8. MODOS
+   ========================================================================== */
+/* modo leitor: sem cromo, sem 3D, uma coluna, tipografia grande */
+body.reader .thumbs,body.reader #gl,body.reader .nav-arrow,body.reader .corner{display:none!important}
+body.reader .book,body.reader .book.single{
+  width:min(100%,760px);aspect-ratio:auto;height:auto;perspective:none;transform:none
+}
+body.reader .spread{position:static}
+body.reader .leaf{position:static;width:100%;height:auto;transform:none!important;transform-style:flat}
+body.reader .face{position:static;border-radius:var(--radius-l);container-type:inline-size}
+body.reader .face.back{display:none}
+body.reader .face::after{display:none}
+body.reader .pg{position:static;overflow:visible;padding:34px clamp(20px,5vw,44px) 40px;font-size:18px}
+body.reader .book::before,body.reader .book::after,
+body.reader .spread::before,body.reader .spread::after{display:none}
+body.reader .cols,body.reader .flips,body.reader .map-views{grid-template-columns:1fr}
+body.reader .stage{align-items:start;overflow:auto}
+
+/* impressão: uma página por folha */
+@media print{
+  body{background:#fff!important}
+  .bar,.thumbs,.foot,.panel,.toast,#gl,.nav-arrow,.corner{display:none!important}
+  .app{padding:0}
+  .book,.book.single{width:100%!important;aspect-ratio:auto!important;perspective:none!important;transform:none!important}
+  .spread{position:static}
+  .leaf{position:static!important;width:100%!important;transform:none!important;page-break-after:always;break-after:page}
+  .face{position:static!important;box-shadow:none!important;border:0!important}
+  .face.back{display:none}
+  .pg{position:static!important;overflow:visible!important;font-size:12pt;padding:12mm;
+      -webkit-mask-image:none!important;mask-image:none!important}
+  .pg h2{color:#123a86!important}
+  /* uma página do livro por folha de papel */
+  #content{display:block;max-width:none;padding:0}
+  #content > .pg{break-after:page;page-break-after:always;box-shadow:none;border-radius:0}
+  #content > .pg:last-child{break-after:auto;page-break-after:auto}
+}
+
+/* movimento reduzido */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;
+    transition-duration:.001ms!important;scroll-behavior:auto!important}
+}
+
+/* ==========================================================================
+   9. RESPONSIVO
+   ========================================================================== */
+@media (max-width:900px){
+  .brand-sub{display:none}
+  .counter{min-width:88px;font-size:14px}
+  input[type=range]{width:84px}
+}
+@media (max-width:640px){
+  .app{padding:6px;gap:8px}
+  .bar{border-radius:20px;padding:8px 10px;gap:6px}
+  .brand-mark{width:38px;height:38px;font-size:20px;border-radius:12px}
+  .brand-title{font-size:14px}
+  .btn{min-height:44px;padding:0 11px;font-size:13px}
+  .btn span.lbl{display:none}
+  .btn-icon{padding:0 12px}
+  .thumbs{padding:6px;gap:8px}
+  .thumb{width:74px}
+  .foot{font-size:11px}
+}
+@media (max-width:380px){
+  .counter{min-width:74px;padding:0 10px;font-size:13px}
+}
+/* paisagem baixinha no celular: some a tira de miniaturas pra sobrar livro */
+@media (max-height:520px) and (orientation:landscape){
+  .thumbs,.foot{display:none}
+}
+
+/* ==========================================================================
+   10. VIEW TRANSITIONS
+   ========================================================================== */
+@view-transition{navigation:none}
+::view-transition-old(page),::view-transition-new(page){animation-duration:.42s;animation-timing-function:cubic-bezier(.22,.61,.36,1)}
+</style>
+<style>
+/* Estado antes do JS (e se o JS falhar): o conteúdo é um documento rolável e legível.
+   O livro 3D só aparece quando o motor confirma que montou. */
+#content{max-width:820px;margin:0 auto;display:grid;gap:18px;padding:8px}
+#content .pg{
+  position:static;overflow:visible;container-type:inline-size;
+  background:linear-gradient(160deg,var(--paper-1),var(--paper-2));color:var(--paper-ink);
+  border-radius:var(--radius-l);padding:34px clamp(18px,4vw,40px) 38px;font-size:17px;
+  box-shadow:var(--chrome-shadow)
+}
+#content .pg-num{position:static;margin-bottom:14px;width:40px;height:40px;font-size:18px;border-radius:13px}
+#content .pg h2{padding-left:0;font-size:26px;min-height:0}
+.book-shell{display:none}
+body.book-ready #content{display:none}
+body.book-ready .book-shell{display:grid}
+.noscript{max-width:60ch;margin:16px auto;padding:14px 18px;border-radius:14px;
+  background:var(--chrome-surface);border:1px solid var(--chrome-border);font-size:14px;line-height:1.5}
+
+/* ---------- capa ---------- */
+.pg.cover{
+  background:
+    radial-gradient(90% 60% at 50% 8%, rgba(91,147,240,.5), transparent 62%),
+    linear-gradient(165deg,#12295e,#081733 58%,#050e22);
+  color:#eaf2ff;
+}
+.pg.cover::after{ /* estrelinhas da capa */
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:
+    radial-gradient(1.6px 1.6px at 14% 18%,#fff,transparent),
+    radial-gradient(1.4px 1.4px at 82% 12%,#ffe9a8,transparent),
+    radial-gradient(1.8px 1.8px at 34% 74%,#fff,transparent),
+    radial-gradient(1.3px 1.3px at 72% 62%,#cfe0ff,transparent),
+    radial-gradient(1.5px 1.5px at 54% 30%,#fff,transparent);
+  opacity:.9;
+}
+.cover-in{position:relative;z-index:1;display:grid;gap:2.2cqi;align-content:center;min-height:100%}
+.cover-kicker{font-size:2.7cqi;letter-spacing:.12em;text-transform:uppercase;font-weight:800;
+  color:var(--gold);margin:0}
+/* precisa vencer `.pg h2`, que é display:flex e tem padding para o número */
+.pg h2.cover-title{display:grid;gap:.2cqi;padding:0;margin:0;min-height:0;text-transform:none;
+  align-items:start}
+.cover-title span{
+  font-family:var(--font-display);font-weight:900;font-size:13cqi;line-height:.9;letter-spacing:-.03em;
+  color:var(--gold);text-shadow:0 .7cqi 0 #a9700a, 0 1.4cqi 2.6cqi rgba(0,0,0,.5)
+}
+.cover-title b{font-family:var(--font-display);font-weight:850;font-size:5cqi;line-height:1.06;
+  letter-spacing:.01em;color:#fff}
+.cover-sub{font-size:3.4cqi;color:#c4d8fb;margin:0;max-width:34ch}
+.pg.cover .art{aspect-ratio:2.1;border-color:rgba(255,255,255,.18);
+  background:radial-gradient(circle at 50% 34%,rgba(91,147,240,.32),transparent 64%)}
+.pg.cover .art-ph{color:#a9c2ea}
+#content .pg.cover{min-height:520px;display:grid}
+
+/* ---------- equipes (p.8 e p.9) ---------- */
+.teams{display:grid;grid-template-columns:1fr 1fr;gap:2.4cqi}
+@container page (max-width:330px){.teams{grid-template-columns:1fr}}
+.team{
+  background:var(--paper-card);border:1px solid var(--paper-line);border-radius:2.8cqi;
+  padding:2.6cqi;display:grid;gap:1.2cqi;justify-items:start;
+  transition:transform .2s var(--ease),border-color .2s
+}
+.team:hover{transform:translateY(-.8cqi);border-color:var(--blue-400)}
+.team b{font-family:var(--font-display);font-weight:850;font-size:3.4cqi;text-transform:uppercase;
+  line-height:1.15;color:var(--blue-700)}
+.team span:last-child{font-size:3cqi;line-height:1.4;color:var(--paper-ink-soft)}
+.team-ico{
+  width:9cqi;height:9cqi;border-radius:2.8cqi;display:grid;place-items:center;font-size:4.4cqi;
+  background:linear-gradient(145deg,var(--blue-500),var(--blue-700));
+  box-shadow:0 .6cqi 1.8cqi rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.35)
+}
+
+/* ---------- FAQ (p.18) ---------- */
+.faq{background:var(--paper-card);border:1px solid var(--paper-line);border-radius:2.6cqi;
+  padding:0 2.8cqi;margin-bottom:1.8cqi;overflow:hidden}
+.faq summary{
+  cursor:pointer;list-style:none;padding:2.4cqi 0;min-height:11cqi;display:flex;align-items:center;gap:2cqi;
+  font-family:var(--font-display);font-weight:800;font-size:3.5cqi;color:var(--blue-700)
+}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::before{content:"?";flex:0 0 auto;width:6.2cqi;height:6.2cqi;border-radius:50%;
+  display:grid;place-items:center;background:var(--blue-600);color:#fff;font-size:3.4cqi}
+.faq[open] summary::before{content:"✓";background:var(--green)}
+.faq p{margin:0 0 2.6cqi;padding-left:8.2cqi;font-size:3.3cqi}
+
+/* ---------- tabela de dados (p.17) ---------- */
+.data-table{width:100%;border-collapse:collapse;font-size:3.1cqi;margin-bottom:2.4cqi}
+.data-table caption{text-align:left;font-size:2.9cqi;color:var(--paper-ink-soft);
+  margin-bottom:1.4cqi;line-height:1.35}
+.data-table th,.data-table td{padding:1.4cqi 2cqi;border-bottom:1px solid var(--paper-line);text-align:left}
+.data-table th{font-family:var(--font-display);font-weight:850;color:var(--blue-700);
+  text-transform:uppercase;font-size:2.8cqi;letter-spacing:.04em}
+.data-table tbody tr:last-child td{border-bottom:0}
+
+.pg h2 small{font-size:.52em;font-weight:700;text-transform:none;opacity:.75;margin-left:.5em}
+
+/* ---------- folha que está virando ---------- */
+.leaf.turning{z-index:9;will-change:transform,filter}
+.leaf.turning .face{box-shadow:0 0 0 1px rgba(0,0,0,.06)}
+.face.blank{background:linear-gradient(160deg,#e8eefb,#d8e4f6)}
+:root[data-theme="dark"] .face.blank{background:linear-gradient(160deg,#0f1c36,#0a1428)}
+.sheen{
+  position:absolute;inset:0;z-index:6;pointer-events:none;opacity:0;
+  background:linear-gradient(105deg,rgba(255,255,255,.72),rgba(255,255,255,.06) 42%,rgba(0,0,0,.16));
+  transition:opacity .1s linear
+}
+:root[data-theme="dark"] .sheen{
+  background:linear-gradient(105deg,rgba(190,215,255,.34),rgba(0,0,0,.05) 42%,rgba(0,0,0,.42))
+}
+
+/* ---------- extras do índice e das miniaturas ---------- */
+.toc .ttl{flex:1;min-width:0}
+.toc .fav-dot{color:var(--gold);font-size:13px;flex:0 0 auto}
+.thumb .thumb-n{display:block;margin-bottom:2px}
+
+/* ---------- canvas da dobra em WebGL ---------- */
+/* frase sendo lida em voz alta */
+.narrating{
+  background:linear-gradient(transparent 58%, color-mix(in oklab,var(--gold) 55%, transparent) 58%);
+  border-radius:4px;
+}
+:root[data-theme="dark"] .narrating{
+  background:linear-gradient(transparent 58%, color-mix(in oklab,var(--gold) 38%, transparent) 58%);
+}
+</style>
+</head>
+<body>
+
+<canvas id="gl" aria-hidden="true"></canvas>
+<a class="sr-only" href="#content">Pular para o conteúdo do livro</a>
+
+<div class="app">
+
+  <!-- ================= BARRA SUPERIOR ================= -->
+  <header class="bar" role="banner">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">🛡️</div>
+      <div class="brand-text">
+        <div class="brand-title">Enzo e a Missão de Cura</div>
+        <div class="brand-sub">Entendendo meu corpo, meus exames e minha recuperação</div>
+      </div>
+    </div>
+
+    <nav class="btn-group" aria-label="Ações do livro">
+      <button class="btn" id="btn-toc" aria-haspopup="dialog">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+        <span class="lbl">Índice</span>
+      </button>
+      <button class="btn" id="btn-fav" aria-pressed="false" title="Marcar esta página como favorita">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><path d="M12 20.5S3.5 15 3.5 9.2A4.7 4.7 0 0 1 12 6.6a4.7 4.7 0 0 1 8.5 2.6C20.5 15 12 20.5 12 20.5z"/></svg>
+        <span class="lbl">Favorito</span>
+      </button>
+      <button class="btn" id="btn-read" aria-pressed="false" title="Ouvir a leitura desta página em voz alta">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5z"/><path d="M16 9a4 4 0 0 1 0 6"/><path d="M19 6a8 8 0 0 1 0 12"/></svg>
+        <span class="lbl">Ouvir</span>
+      </button>
+      <button class="btn" id="btn-reader" aria-pressed="false" title="Modo leitor: texto grande, sem efeitos">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h7a3 3 0 0 1 3 3v11a2.5 2.5 0 0 0-2.5-2.5H3z"/><path d="M21 5h-7a3 3 0 0 0-3 3v11a2.5 2.5 0 0 1 2.5-2.5H21z"/></svg>
+        <span class="lbl">Leitor</span>
+      </button>
+      <button class="btn btn-icon" id="btn-theme" title="Alternar tema claro e escuro" aria-label="Alternar tema claro e escuro">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg>
+      </button>
+      <button class="btn btn-icon" id="btn-full" title="Tela cheia" aria-label="Tela cheia">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+      </button>
+      <button class="btn btn-icon" id="btn-help" aria-haspopup="dialog" title="Como usar" aria-label="Como usar o livro">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.2 2.4c-.7.2-1.2.9-1.2 1.6v.3"/><path d="M12 17.2h.01"/></svg>
+      </button>
+    </nav>
+  </header>
+
+  <!-- ================= PALCO ================= -->
+  <div class="stage">
+    <div class="book-wrap book-shell">
+      <div class="book" id="book">
+        <div class="spread" id="spread"></div>
+        <button class="nav-arrow prev" id="btn-prev" aria-label="Página anterior">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5 8 12l7 7"/></svg>
+        </button>
+        <button class="nav-arrow next" id="btn-next" aria-label="Próxima página">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <noscript><p class="noscript">O livro interativo precisa de JavaScript para virar as páginas e ler em voz alta.
+      Sem ele, o texto completo continua logo abaixo, do começo ao fim.</p></noscript>
+  </div>
+
+  <!-- ================= BARRA INFERIOR ================= -->
+  <div class="bar" id="botbar">
+    <div class="btn-group">
+      <button class="btn btn-icon" id="btn-zoom-out" aria-label="Diminuir o texto">−</button>
+      <div class="slider"><span aria-hidden="true">Zoom</span>
+        <input type="range" id="zoom" min="70" max="160" step="5" value="100" aria-label="Tamanho do livro">
+      </div>
+      <button class="btn btn-icon" id="btn-zoom-in" aria-label="Aumentar o texto">+</button>
+    </div>
+
+    <div class="btn-group" style="margin:0 auto">
+      <button class="btn btn-icon" id="btn-first" aria-label="Ir para a capa">«</button>
+      <div class="counter" id="counter" role="status" aria-live="polite">1 / 23</div>
+      <button class="btn btn-icon" id="btn-last" aria-label="Ir para a última página">»</button>
+    </div>
+
+    <div class="btn-group">
+      <button class="btn" id="btn-share">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/><path d="m8.3 10.8 7.4-4.3M8.3 13.2l7.4 4.3"/></svg>
+        <span class="lbl">Compartilhar</span>
+      </button>
+      <button class="btn" id="btn-print">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><path d="M7 9V3h10v6"/><rect x="4" y="9" width="16" height="7" rx="2"/><path d="M7 16h10v5H7z"/></svg>
+        <span class="lbl">Imprimir</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ================= MINIATURAS ================= -->
+  <nav class="thumbs bar" id="thumbs" aria-label="Miniaturas das páginas"></nav>
+
+  <footer class="foot">
+    <span>Material educativo para o paciente e a família. Inspirado no acolhimento do Hospital Pequeno Príncipe.
+      <strong>Não é um documento oficial do hospital</strong> e não substitui a orientação da equipe que cuida do Enzo.</span>
+  </footer>
+</div>
+
+<!-- ================= PAINÉIS ================= -->
+<dialog class="panel" id="panel-toc" aria-labelledby="toc-h">
+  <button class="btn btn-icon panel-close" data-close aria-label="Fechar">✕</button>
+  <h2 id="toc-h">Índice</h2>
+  <p>23 páginas. As favoritas aparecem com ♥.</p>
+  <ul class="toc" id="toc-list"></ul>
+</dialog>
+
+<dialog class="panel" id="panel-help" aria-labelledby="help-h">
+  <button class="btn btn-icon panel-close" data-close aria-label="Fechar">✕</button>
+  <h2 id="help-h">Como usar o livro</h2>
+  <p>Navegue pelas páginas, ouça a leitura, marque suas favoritas e escreva no seu espaço.
+     Tudo o que você escrever fica salvo só neste aparelho — nada é enviado para a internet.</p>
+  <div class="how">
+    <div><span class="em" aria-hidden="true">👆</span><span>Arraste o canto da página para virar</span></div>
+    <div><span class="em" aria-hidden="true">👉</span><span>Deslize o dedo para os lados no celular</span></div>
+    <div><span class="em" aria-hidden="true">⌨️</span><span>Use as setas ← → do teclado</span></div>
+    <div><span class="em" aria-hidden="true">🔊</span><span>Toque em <b>Ouvir</b> para a leitura em voz alta</span></div>
+    <div><span class="em" aria-hidden="true">♥</span><span>Marque favoritos e volte depois pelo índice</span></div>
+    <div><span class="em" aria-hidden="true">📖</span><span><b>Leitor</b> deixa o texto grande e sem efeitos</span></div>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- ==========================================================================
+     CONTEÚDO DO LIVRO — 23 páginas em HTML estático.
+     Sem JS isto é um documento rolável completo; com JS, o motor move cada
+     <article> para dentro de uma face do livro 3D.
+     ========================================================================== -->
+<main id="content">
+
+<!-- ============ 0 · CAPA ============ -->
+<article class="pg cover" id="pg-0" data-title="Capa" data-short="Capa">
+  <div class="cover-in">
+    <p class="cover-kicker">Hospital Pequeno Príncipe · material educativo</p>
+    <h2 class="cover-title"><span>ENZO</span><b>E A MISSÃO DE CURA</b></h2>
+    <p class="cover-sub">Entendendo meu corpo, meus exames e minha recuperação.</p>
+    <div class="art" data-art="capa">
+      <div class="art-ph"><span class="em" aria-hidden="true">🦠🛡️💊</span><span>Cena 3D da missão</span></div>
+    </div>
+    <div class="mission">
+      <span class="bullet b-gold" aria-hidden="true">🎯</span>
+      <div><div class="mission-title">Missão de hoje</div>
+        <div>Entender como meu corpo está sendo cuidado.</div></div>
+    </div>
+  </div>
+</article>
+
+<!-- ============ 1 · OLÁ, ENZO! ============ -->
+<article class="pg" id="pg-1" data-title="Olá, Enzo!" data-short="Olá, Enzo!">
+  <div class="pg-num" aria-hidden="true">1</div>
+  <h2>Olá, Enzo!</h2>
+  <p class="lead">Este livrinho foi feito para ajudar você a entender melhor o que aconteceu no seu corpo.</p>
+  <p>Você passou por dias importantes, com exames, remédios, cirurgias e muitos cuidados.</p>
+  <p>Tudo isso aconteceu porque seu corpo precisou de ajuda para combater uma infecção.</p>
+  <p>Agora vamos entender essa história de um jeito mais fácil.</p>
+  <div class="art" data-art="enzo-leitura">
+    <div class="art-ph"><span class="em" aria-hidden="true">📖</span><span>Enzo lendo com a equipe</span></div>
+  </div>
+  <div class="mission">
+    <span class="bullet b-gold" aria-hidden="true">🎯</span>
+    <div><div class="mission-title">Missão de hoje</div>
+      <div>Entender como meu corpo está sendo cuidado.</div></div>
+  </div>
+</article>
+
+<!-- ============ 2 · O QUE ACONTECEU COMIGO ============ -->
+<article class="pg" id="pg-2" data-title="O que aconteceu comigo?" data-short="O que aconteceu?">
+  <div class="pg-num" aria-hidden="true">2</div>
+  <h2>O que aconteceu comigo?</h2>
+  <div class="cols">
+    <div>
+      <p>Uma bactéria chamada <strong>Staphylococcus aureus</strong> entrou no seu corpo e causou uma infecção.</p>
+      <p>Essa bactéria conseguiu chegar ao sangue e, depois, formar <strong>focos</strong> em alguns lugares do corpo.</p>
+      <p>Por isso você sentiu dor, febre, cansaço e precisou de muitos cuidados.</p>
+    </div>
+    <div>
+      <ol class="timeline" id="tl-2">
+        <li><span class="bullet b-purple" aria-hidden="true">🦠</span><span>Entrou uma bactéria</span></li>
+        <li><span class="bullet b-red" aria-hidden="true">🩸</span><span>Ela chegou ao sangue</span></li>
+        <li><span class="bullet b-orange" aria-hidden="true">✳️</span><span>Fez focos em alguns lugares</span></li>
+        <li><span class="bullet" aria-hidden="true">🛡️</span><span>A equipe começou o tratamento</span></li>
+      </ol>
+    </div>
+  </div>
+</article>
+
+<!-- ============ 3 · O QUE É UMA BACTÉRIA ============ -->
+<article class="pg" id="pg-3" data-title="O que é uma bactéria?" data-short="O que é uma bactéria?">
+  <div class="pg-num" aria-hidden="true">3</div>
+  <h2>O que é uma bactéria?</h2>
+  <p>Bactérias são seres tão pequenos que só podem ser vistos com microscópio.</p>
+  <p>Algumas bactérias não fazem mal. Mas outras podem causar infecções.</p>
+  <p>No seu caso, foi uma bactéria mais forte, que precisou ser combatida com remédios especiais.</p>
+
+  <div class="lens-lab" id="lens-lab" aria-hidden="true">
+    <div class="lens" id="lens"></div>
+  </div>
+  <p class="hint">Passe o dedo ou o mouse para usar a lupa 🔍</p>
+
+  <div class="card">
+    <div class="eq">
+      <div class="eq-item"><span class="orb p" aria-hidden="true">🦠</span>
+        <span class="eq-name">Bactéria</span><span class="eq-desc">= invasor</span></div>
+      <span class="eq-op" aria-hidden="true">+</span>
+      <div class="eq-item"><span class="orb" aria-hidden="true">🛡️</span>
+        <span class="eq-name">Defesa do corpo</span><span class="eq-desc">= sistema imunológico</span></div>
+      <span class="eq-op" aria-hidden="true">+</span>
+      <div class="eq-item"><span class="orb r" aria-hidden="true">💊</span>
+        <span class="eq-name">Antibióticos</span><span class="eq-desc">= reforço especial</span></div>
+    </div>
+  </div>
+</article>
+
+<!-- ============ 4 · POR QUE DOEU EM VÁRIOS LUGARES ============ -->
+<article class="pg" id="pg-4" data-title="Por que doeu em vários lugares?" data-short="Por que doeu em vários lugares?">
+  <div class="pg-num" aria-hidden="true">4</div>
+  <h2>Por que doeu em vários lugares?</h2>
+  <div class="cols">
+    <div>
+      <p>Porque a infecção não ficou em um lugar só.</p>
+      <p>Ela causou inflamação em algumas regiões diferentes do corpo.</p>
+      <p>Por isso a dor apareceu em lugares diferentes em momentos diferentes.</p>
+      <div class="card tint" style="--accent:var(--orange)">
+        Cada lugar reagiu no seu tempo. Isso não quer dizer que estava piorando —
+        quer dizer que a equipe estava encontrando cada ponto para tratar.
+      </div>
+    </div>
+    <div>
+      <ul class="icon-list">
+        <li><span class="bullet b-orange" aria-hidden="true">1</span><span>Ombro / escápula <b>direita</b></span></li>
+        <li><span class="bullet b-orange" aria-hidden="true">2</span><span>Dedo da mão <b>direita</b></span></li>
+        <li><span class="bullet b-orange" aria-hidden="true">3</span><span>Pé <b>direito</b></span></li>
+        <li><span class="bullet b-orange" aria-hidden="true">4</span><span>Tornozelo / perna <b>esquerda</b></span></li>
+        <li><span class="bullet b-teal" aria-hidden="true">5</span><span>Pulmão <b>esquerdo</b> (área acompanhada)</span></li>
+      </ul>
+    </div>
+  </div>
+</article>
+
+<!-- ============ 5 · MAPA DA MISSÃO DE CURA ============ -->
+<article class="pg" id="pg-5" data-title="Mapa da Missão de Cura" data-short="Mapa da missão">
+  <div class="pg-num" aria-hidden="true">5</div>
+  <h2>Mapa da Missão de Cura</h2>
+  <p>Aqui estão os principais lugares onde a equipe encontrou a infecção e acompanhou a recuperação
+     do seu corpo. Toque em cada marca para saber o que ela significa.</p>
+
+  <div class="map-views">
+    <div class="map-view">
+      <h4>Vista frontal</h4>
+      <svg viewBox="0 0 120 200" role="img" aria-label="Desenho do corpo visto de frente com as marcas da missão">
+        <circle class="body-fill" cx="60" cy="22" r="15"/>
+        <rect class="body-fill" x="53" y="33" width="14" height="11" rx="5"/>
+        <path class="body-fill" d="M60 42c11 0 20 4 21 11l3 30c1 8-1 14-3 19H39c-2-5-4-11-3-19l3-30c1-7 10-11 21-11z"/>
+        <path class="body-limb" d="M43 52 28 84l-4 22"/>
+        <path class="body-limb" d="M77 52l15 32 4 22"/>
+        <circle class="body-fill" cx="23" cy="112" r="7"/>
+        <circle class="body-fill" cx="97" cy="112" r="7"/>
+        <path class="body-limb" d="M51 104l-3 44-2 38"/>
+        <path class="body-limb" d="M69 104l3 44 2 38"/>
+        <ellipse class="body-fill" cx="45" cy="191" rx="10" ry="6"/>
+        <ellipse class="body-fill" cx="75" cy="191" rx="10" ry="6"/>
+        <g class="sites" data-view="frontal"></g>
+      </svg>
+    </div>
+    <div class="map-view">
+      <h4>Vista posterior</h4>
+      <svg viewBox="0 0 120 200" role="img" aria-label="Desenho do corpo visto de costas com as marcas da missão">
+        <circle class="body-fill" cx="60" cy="22" r="15"/>
+        <rect class="body-fill" x="53" y="33" width="14" height="11" rx="5"/>
+        <path class="body-fill" d="M60 42c11 0 20 4 21 11l3 30c1 8-1 14-3 19H39c-2-5-4-11-3-19l3-30c1-7 10-11 21-11z"/>
+        <path class="body-limb" d="M43 52 28 84l-4 22"/>
+        <path class="body-limb" d="M77 52l15 32 4 22"/>
+        <circle class="body-fill" cx="23" cy="112" r="7"/>
+        <circle class="body-fill" cx="97" cy="112" r="7"/>
+        <path class="body-limb" d="M51 104l-3 44-2 38"/>
+        <path class="body-limb" d="M69 104l3 44 2 38"/>
+        <ellipse class="body-fill" cx="45" cy="191" rx="10" ry="6"/>
+        <ellipse class="body-fill" cx="75" cy="191" rx="10" ry="6"/>
+        <g class="sites" data-view="posterior"></g>
+      </svg>
+    </div>
+  </div>
+
+  <div class="map-readout" id="map-readout">
+    <b>Toque em uma marca do mapa</b>
+    <span>Cada símbolo conta uma coisa diferente sobre aquele lugar do corpo.</span>
+  </div>
+
+  <h3>O que cada símbolo quer dizer</h3>
+  <ul class="map-legend">
+    <li><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" class="cat-osseo"/></svg>
+      <span><b>Foco no osso confirmado</b> — a equipe confirmou infecção nesse osso.</span></li>
+    <li><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2" transform="rotate(45 12 12)" class="cat-artic"/></svg>
+      <span><b>Foco em articulação ou tendão</b> — a inflamação ficou ao redor da junta ou do tendão.</span></li>
+    <li><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" class="cat-acomp"/></svg>
+      <span><b>Área acompanhada</b> — um lugar que a equipe ficou <b>observando de perto</b>.
+        Acompanhar não é o mesmo que ter diagnóstico fechado.</span></li>
+    <li><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" class="cat-osseo"/><circle cx="12" cy="12" r="11" class="cat-cir"/></svg>
+      <span><b>Local tratado com cirurgia</b> — o anel branco marca onde foi feita a limpeza cirúrgica.</span></li>
+  </ul>
+
+  <p class="map-note"><b>Direita e esquerda são sempre as do Enzo</b>, não as de quem olha o desenho.
+     Na vista de frente, o lado direito do Enzo aparece à esquerda da figura; na vista de costas, aparece à direita.</p>
+
+  <h3 class="sr-only">Lista dos lugares marcados</h3>
+  <ul class="icon-list" id="map-list">
+    <li><span class="bullet b-red" aria-hidden="true">●</span><span><b>Escápula direita</b> — foco no osso, tratado com cirurgia.</span></li>
+    <li><span class="bullet b-orange" aria-hidden="true">◆</span><span><b>3º dedo da mão direita</b> — foco em articulação/tendão, tratado com cirurgia.</span></li>
+    <li><span class="bullet b-red" aria-hidden="true">●</span><span><b>Pé direito (3º metatarso)</b> — foco no osso, tratado com cirurgia.</span></li>
+    <li><span class="bullet b-red" aria-hidden="true">●</span><span><b>Tíbia distal / tornozelo esquerdo</b> — foco no osso, tratado com cirurgia.</span></li>
+    <li><span class="bullet b-teal" aria-hidden="true">○</span><span><b>Pulmão esquerdo</b> — área acompanhada de perto pela equipe.</span></li>
+  </ul>
+</article>
+
+<!-- ============ 6 · O QUE É OSTEOMIELITE ============ -->
+<article class="pg" id="pg-6" data-title="O que é osteomielite?" data-short="O que é osteomielite?">
+  <div class="pg-num" aria-hidden="true">6</div>
+  <h2>O que é osteomielite?</h2>
+  <div class="cols">
+    <div>
+      <p>Osteomielite é quando uma infecção chega até um <strong>osso</strong>.</p>
+      <p>Como os ossos são importantes para o corpo, isso precisa de atenção,
+         tratamento forte e acompanhamento.</p>
+      <div class="art" data-art="osso" style="aspect-ratio:1.1">
+        <div class="art-ph"><span class="em" aria-hidden="true">🦴</span><span>Osso em 3D — arraste para girar</span></div>
+      </div>
+    </div>
+    <div>
+      <h3>Resumo</h3>
+      <ul class="icon-list">
+        <li><span class="bullet b-red" aria-hidden="true">🦠</span><span>Infecção no osso</span></li>
+        <li><span class="bullet b-green" aria-hidden="true">💊</span><span>Precisa de antibióticos</span></li>
+        <li><span class="bullet b-teal" aria-hidden="true">🔬</span><span>Precisa de exames</span></li>
+        <li><span class="bullet b-orange" aria-hidden="true">🏥</span><span>Às vezes precisa de cirurgia</span></li>
+      </ul>
+    </div>
+  </div>
+</article>
+
+<!-- ============ 7 · POR QUE EU FIZ CIRURGIA ============ -->
+<article class="pg" id="pg-7" data-title="Por que eu fiz cirurgia?" data-short="Por que eu fiz cirurgia?">
+  <div class="pg-num" aria-hidden="true">7</div>
+  <h2>Por que eu fiz cirurgia?</h2>
+  <p>Em alguns lugares, a infecção formou secreção e inflamação mais forte.</p>
+  <p>Nesses pontos, a cirurgia ajudou a:</p>
+  <ul class="icon-list">
+    <li><span class="bullet b-green" aria-hidden="true">✓</span><span>limpar a área</span></li>
+    <li><span class="bullet b-green" aria-hidden="true">✓</span><span>retirar secreções</span></li>
+    <li><span class="bullet b-green" aria-hidden="true">✓</span><span>ajudar o remédio a funcionar melhor</span></li>
+    <li><span class="bullet b-green" aria-hidden="true">✓</span><span>impedir que a infecção continuasse causando bagunça</span></li>
+  </ul>
+  <div class="quote">A cirurgia foi como uma limpeza estratégica. ⭐</div>
+</article>
+
+<!-- ============ 8 · QUEM ESTÁ CUIDANDO (1) ============ -->
+<article class="pg" id="pg-8" data-title="Quem está cuidando de mim? (parte 1)" data-short="Quem está cuidando? (1)">
+  <div class="pg-num" aria-hidden="true">8</div>
+  <h2>Quem está cuidando de mim? <small>(parte 1)</small></h2>
+  <p>Você tem uma equipe inteira ajudando na sua recuperação.</p>
+  <div class="teams">
+    <div class="team"><span class="team-ico b-red" aria-hidden="true">🏥</span>
+      <b>Pediatria intensiva</b>
+      <span>Cuidou de você na fase mais delicada, observando tudo bem de perto.</span></div>
+    <div class="team"><span class="team-ico b-teal" aria-hidden="true">🩺</span>
+      <b>Centro cirúrgico</b>
+      <span>Participou das cirurgias e dos procedimentos importantes.</span></div>
+    <div class="team"><span class="team-ico b-orange" aria-hidden="true">🦴</span>
+      <b>Ortopedia pediátrica</b>
+      <span>Cuidou dos ossos, articulações e locais mais afetados.</span></div>
+    <div class="team"><span class="team-ico b-purple" aria-hidden="true">😴</span>
+      <b>Anestesiologia</b>
+      <span>Ajudou a manter você seguro e confortável durante os procedimentos.</span></div>
+  </div>
+</article>
+
+<!-- ============ 9 · QUEM ESTÁ CUIDANDO (2) ============ -->
+<article class="pg" id="pg-9" data-title="Quem está cuidando de mim? (parte 2)" data-short="Quem está cuidando? (2)">
+  <div class="pg-num" aria-hidden="true">9</div>
+  <h2>Quem está cuidando de mim? <small>(parte 2)</small></h2>
+  <p>Além das equipes principais, outras pessoas ajudam todos os dias na sua melhora.</p>
+  <div class="teams">
+    <div class="team"><span class="team-ico b-green" aria-hidden="true">🤸</span>
+      <b>Fisioterapia</b><span>Ajuda nos movimentos, na respiração e na recuperação do corpo.</span></div>
+    <div class="team"><span class="team-ico b-teal" aria-hidden="true">💉</span>
+      <b>Enfermagem</b><span>Cuida dos remédios, sinais vitais e dos cuidados do dia a dia.</span></div>
+    <div class="team"><span class="team-ico b-purple" aria-hidden="true">🔬</span>
+      <b>Equipe clínica / infectologia</b><span>Acompanha a infecção e os antibióticos.</span></div>
+    <div class="team"><span class="team-ico b-orange" aria-hidden="true">🥗</span>
+      <b>Nutrição</b><span>Ajuda seu corpo a recuperar energia e força.</span></div>
+    <div class="team"><span class="team-ico" aria-hidden="true">🖥️</span>
+      <b>Radiologia / imagem</b><span>Mostra como o corpo está por dentro.</span></div>
+    <div class="team"><span class="team-ico b-red" aria-hidden="true">🧪</span>
+      <b>Laboratório</b><span>Ajuda a entender como o sangue e a inflamação estão se comportando.</span></div>
+  </div>
+</article>
+
+<!-- ============ 10 · PARA QUE SERVEM OS EXAMES ============ -->
+<article class="pg" id="pg-10" data-title="Para que servem os exames?" data-short="Para que servem os exames?">
+  <div class="pg-num" aria-hidden="true">10</div>
+  <h2>Para que servem os exames?</h2>
+  <p>Cada exame é uma pista que ajuda a equipe a entender seu corpo.
+     Toque em cada cartão para ver o que ele faz.</p>
+  <div class="flips">
+    <button class="flip" aria-pressed="false"><span class="flip-in">
+      <span class="flip-f"><span class="flip-ico" aria-hidden="true">🩸</span><span class="flip-name">Exames de sangue</span></span>
+      <span class="flip-b">Mostram como seu corpo está reagindo à infecção e ao tratamento.</span>
+    </span></button>
+    <button class="flip" aria-pressed="false"><span class="flip-in">
+      <span class="flip-f"><span class="flip-ico" aria-hidden="true">🩻</span><span class="flip-name">Raio-X</span></span>
+      <span class="flip-b">Ajuda a olhar os pulmões e outras partes do corpo.</span>
+    </span></button>
+    <button class="flip" aria-pressed="false"><span class="flip-in">
+      <span class="flip-f"><span class="flip-ico" aria-hidden="true">📡</span><span class="flip-name">Ultrassom</span></span>
+      <span class="flip-b">Ajuda a ver líquidos e inflamações.</span>
+    </span></button>
+    <button class="flip" aria-pressed="false"><span class="flip-in">
+      <span class="flip-f"><span class="flip-ico" aria-hidden="true">🧲</span><span class="flip-name">Ressonância</span></span>
+      <span class="flip-b">Mostra detalhes do corpo por dentro, como um grande mapa.</span>
+    </span></button>
+  </div>
+</article>
+
+<!-- ============ 11 · O QUE SÃO OS ANTIBIÓTICOS ============ -->
+<article class="pg" id="pg-11" data-title="O que são os antibióticos?" data-short="O que são os antibióticos?">
+  <div class="pg-num" aria-hidden="true">11</div>
+  <h2>O que são os antibióticos?</h2>
+  <p>Antibióticos são remédios especiais que ajudam a enfraquecer ou matar a bactéria.</p>
+  <p>Eles trabalham <strong>junto com o seu corpo</strong> para combater a infecção.</p>
+  <div class="art" data-art="capsula" style="aspect-ratio:1.8">
+    <div class="art-ph"><span class="em" aria-hidden="true">💊</span><span>Cápsula-herói em 3D</span></div>
+  </div>
+  <div class="card">
+    <div class="eq">
+      <div class="eq-item"><span class="orb r" aria-hidden="true">💊</span>
+        <span class="eq-name">Antibiótico</span><span class="eq-desc">= reforço especial</span></div>
+      <span class="eq-op" aria-hidden="true">+</span>
+      <div class="eq-item"><span class="orb p" aria-hidden="true">🦠</span>
+        <span class="eq-name">Bactéria</span><span class="eq-desc">= invasor</span></div>
+      <span class="eq-op" aria-hidden="true">+</span>
+      <div class="eq-item"><span class="orb" aria-hidden="true">🛡️</span>
+        <span class="eq-name">Corpo</span><span class="eq-desc">= defesa</span></div>
+    </div>
+  </div>
+</article>
+
+<!-- ============ 12 · POR QUE EU FIQUEI TÃO CANSADO ============ -->
+<article class="pg" id="pg-12" data-title="Por que eu fiquei tão cansado?" data-short="Por que fiquei tão cansado?">
+  <div class="pg-num" aria-hidden="true">12</div>
+  <h2>Por que eu fiquei tão cansado?</h2>
+  <p>Seu corpo gastou muita energia para enfrentar a infecção e se recuperar.</p>
+  <div class="battery" id="battery" aria-hidden="true">
+    <div class="battery-body"><div class="battery-fill"></div></div>
+    <div class="battery-cap"></div>
+  </div>
+  <p>Além disso, você também passou por:</p>
+  <ul class="chips">
+    <li class="chip">😣 dor</li><li class="chip">🏥 cirurgias</li><li class="chip">💊 remédios fortes</li>
+    <li class="chip">🍽️ pouco apetite</li><li class="chip">🩸 anemia</li><li class="chip">🌙 dias difíceis no hospital</li>
+  </ul>
+  <div class="quote">Sentir-se cansado não é sinal de fraqueza.<br>É sinal de que seu corpo está trabalhando muito para melhorar.</div>
+</article>
+
+<!-- ============ 13 · O QUE É ANEMIA ============ -->
+<article class="pg" id="pg-13" data-title="O que é anemia?" data-short="O que é anemia?">
+  <div class="pg-num" aria-hidden="true">13</div>
+  <h2>O que é anemia?</h2>
+  <div class="cols">
+    <div>
+      <p>O sangue tem células especiais que ajudam a levar <strong>oxigênio</strong> pelo corpo.</p>
+      <p>Quando essas células ficam em menor quantidade, a pessoa pode sentir:</p>
+      <ul class="icon-list">
+        <li><span class="bullet b-red" aria-hidden="true">😴</span><span>cansaço</span></li>
+        <li><span class="bullet b-red" aria-hidden="true">💪</span><span>fraqueza</span></li>
+        <li><span class="bullet b-red" aria-hidden="true">💫</span><span>tontura</span></li>
+        <li><span class="bullet b-red" aria-hidden="true">🔋</span><span>menos energia</span></li>
+      </ul>
+    </div>
+    <div>
+      <div class="art" data-art="hemacia" style="aspect-ratio:1">
+        <div class="art-ph"><span class="em" aria-hidden="true">🩸</span><span>Hemácias levando oxigênio</span></div>
+      </div>
+      <div class="card tint" style="--accent:var(--red)">
+        No seu caso, os médicos estão acompanhando isso para ajudar você a recuperar suas forças.
+      </div>
+    </div>
+  </div>
+</article>
+
+<!-- ============ 14 · COMO SABEM QUE ESTOU MELHORANDO ============ -->
+<article class="pg" id="pg-14" data-title="Como os médicos sabem que estou melhorando?" data-short="Como sabem que estou melhorando?">
+  <div class="pg-num" aria-hidden="true">14</div>
+  <h2>Como os médicos sabem que estou melhorando?</h2>
+  <p>Os médicos observam várias pistas ao mesmo tempo.</p>
+  <ul class="icon-list">
+    <li><span class="bullet b-green" aria-hidden="true">✓</span><span>menos febre</span></li>
+    <li><span class="bullet b-green" aria-hidden="true">✓</span><span>menos dor</span></li>
+    <li><span class="bullet b-green" aria-hidden="true">✓</span><span>exames melhores</span></li>
+    <li><span class="bullet b-green" aria-hidden="true">✓</span><span>inflamação diminuindo</span></li>
+    <li><span class="bullet b-green" aria-hidden="true">✓</span><span>você conseguindo comer melhor</span></li>
+    <li><span class="bullet b-green" aria-hidden="true">✓</span><span>mais estabilidade</span></li>
+  </ul>
+  <div class="quote">Melhorar pode levar tempo, mas cada pequeno passo conta.</div>
+</article>
+
+<!-- ============ 15 · COMO POSSO AJUDAR MEU CORPO ============ -->
+<article class="pg" id="pg-15" data-title="Como posso ajudar meu corpo?" data-short="Como posso ajudar meu corpo?">
+  <div class="pg-num" aria-hidden="true">15</div>
+  <h2>Como posso ajudar meu corpo?</h2>
+  <p>Você também faz parte dessa missão! Marque o que você já conseguiu fazer hoje.</p>
+
+  <div class="progress"><span id="ck-count">0 de 7</span>
+    <span class="progress-track"><span class="progress-fill" id="ck-fill"></span></span></div>
+
+  <ul class="check" id="checklist">
+    <li><label><input type="checkbox" data-ck="remedios"><span class="box" aria-hidden="true">✓</span><span class="txt">tomar os remédios</span></label></li>
+    <li><label><input type="checkbox" data-ck="descansar"><span class="box" aria-hidden="true">✓</span><span class="txt">descansar</span></label></li>
+    <li><label><input type="checkbox" data-ck="liquidos"><span class="box" aria-hidden="true">✓</span><span class="txt">beber líquidos</span></label></li>
+    <li><label><input type="checkbox" data-ck="alimentar"><span class="box" aria-hidden="true">✓</span><span class="txt">tentar se alimentar</span></label></li>
+    <li><label><input type="checkbox" data-ck="avisar"><span class="box" aria-hidden="true">✓</span><span class="txt">avisar quando sentir dor</span></label></li>
+    <li><label><input type="checkbox" data-ck="exames"><span class="box" aria-hidden="true">✓</span><span class="txt">fazer os exames</span></label></li>
+    <li><label><input type="checkbox" data-ck="paciencia"><span class="box" aria-hidden="true">✓</span><span class="txt">ter paciência com o corpo</span></label></li>
+  </ul>
+
+  <div class="quote">Recuperação também é uma forma de coragem! 🦸</div>
+</article>
+
+<!-- ============ 16 · CHECKPOINTS DA MISSÃO ============ -->
+<article class="pg" id="pg-16" data-title="Checkpoints da missão" data-short="Checkpoints da missão">
+  <div class="pg-num" aria-hidden="true">16</div>
+  <h2>Checkpoints da missão</h2>
+  <p>Até aqui, sua jornada teve várias fases importantes.</p>
+  <div class="phases">
+    <div class="phase done"><span class="phase-dot" aria-hidden="true">🔍</span>
+      <span class="phase-name">Fase 1</span><span class="phase-desc">Descobrir o problema</span></div>
+    <div class="phase done"><span class="phase-dot" aria-hidden="true">🧍</span>
+      <span class="phase-name">Fase 2</span><span class="phase-desc">Mapear o corpo</span></div>
+    <div class="phase done"><span class="phase-dot" aria-hidden="true">💉</span>
+      <span class="phase-name">Fase 3</span><span class="phase-desc">Tratar os focos</span></div>
+    <div class="phase"><span class="phase-dot" aria-hidden="true">💪</span>
+      <span class="phase-name">Fase 4</span><span class="phase-desc">Recuperar a força</span></div>
+  </div>
+  <p>Você já passou por etapas muito importantes e agora está seguindo em frente.</p>
+  <div class="quote">⭐ Você é o herói da sua história!</div>
+</article>
+
+<!-- ============ 17 · O QUE JÁ MELHOROU ============ -->
+<article class="pg" id="pg-17" data-title="O que já melhorou?" data-short="O que já melhorou?">
+  <div class="pg-num" aria-hidden="true">17</div>
+  <h2>O que já melhorou?</h2>
+  <p>Seus exames vêm mostrando sinais de melhora, e isso é muito importante para a recuperação.</p>
+  <p>A inflamação no sangue — medida por um exame chamado <strong>PCR</strong> — foi
+     diminuindo ao longo dos dias. Isso é um dos sinais de que o tratamento está ajudando.</p>
+
+  <div class="chart-box">
+    <canvas id="pcr-canvas" width="640" height="320" aria-hidden="true"></canvas>
+    <div class="chart-tip" id="pcr-tip"></div>
+  </div>
+
+  <table class="data-table" id="pcr-table">
+    <caption>Inflamação no sangue (PCR) ao longo do tratamento —
+      <b>valores de exemplo, para trocar pelos exames reais</b></caption>
+    <thead><tr><th scope="col">Data</th><th scope="col">PCR (mg/dL)</th></tr></thead>
+    <tbody>
+      <tr><td>29/04</td><td>24,8</td></tr>
+      <tr><td>03/05</td><td>17,2</td></tr>
+      <tr><td>10/05</td><td>8,6</td></tr>
+      <tr><td>14/05</td><td>3,9</td></tr>
+      <tr><td>18/05</td><td>1,4</td></tr>
+    </tbody>
+  </table>
+  <p class="map-note">A linha descendo quer dizer que a inflamação está diminuindo. 📉</p>
+</article>
+
+<!-- ============ 18 · PERGUNTAS QUE VOCÊ PODE TER ============ -->
+<article class="pg" id="pg-18" data-title="Perguntas que você pode ter" data-short="Perguntas que você pode ter">
+  <div class="pg-num" aria-hidden="true">18</div>
+  <h2>Perguntas que você pode ter</h2>
+
+  <details class="faq"><summary>Por que eu fiquei na UTI?</summary>
+    <p>Porque seu caso precisava ser observado bem de perto em uma fase importante.</p></details>
+  <details class="faq"><summary>Por que eu fiz ressonância?</summary>
+    <p>Porque ela mostra detalhes do corpo por dentro, como um grande mapa.</p></details>
+  <details class="faq"><summary>Por que eu senti tanta dor?</summary>
+    <p>Porque algumas partes do seu corpo ficaram inflamadas e precisaram de tratamento.</p></details>
+  <details class="faq"><summary>Quando eu vou ficar bom de vez?</summary>
+    <p>Cada corpo tem o seu tempo. A equipe acompanha os exames e vai contando para você
+       cada passo que já foi vencido.</p></details>
+
+  <h3>Missão relâmpago 🚀</h3>
+  <p>Cinco perguntinhas para ver o que você já descobriu. Aqui não existe resposta errada — só pistas novas.</p>
+  <div class="quiz" id="quiz"></div>
+  <div class="quiz-score" id="quiz-score" hidden></div>
+</article>
+
+<!-- ============ 19 · COMER, BEBER E GANHAR FORÇA ============ -->
+<article class="pg" id="pg-19" data-title="Comer, beber e ganhar força" data-short="Comer, beber e ganhar força">
+  <div class="pg-num" aria-hidden="true">19</div>
+  <h2>Comer, beber e ganhar força</h2>
+  <p>Depois de uma infecção importante, o corpo precisa de energia para se recuperar.</p>
+  <p>Comer melhor aos poucos, beber líquidos e descansar ajudam seu corpo a voltar a ter força.</p>
+  <div class="battery full" id="battery-2" aria-hidden="true">
+    <div class="battery-body"><div class="battery-fill"></div></div>
+    <div class="battery-cap"></div>
+  </div>
+  <div class="card">
+    <div class="eq">
+      <div class="eq-item"><span class="orb g" aria-hidden="true">🍎</span>
+        <span class="eq-name">Comida</span><span class="eq-desc">= energia</span></div>
+      <span class="eq-op" aria-hidden="true">+</span>
+      <div class="eq-item"><span class="orb" aria-hidden="true">💧</span>
+        <span class="eq-name">Líquidos</span><span class="eq-desc">= hidratam</span></div>
+      <span class="eq-op" aria-hidden="true">+</span>
+      <div class="eq-item"><span class="orb p" aria-hidden="true">😴</span>
+        <span class="eq-name">Descanso</span><span class="eq-desc">= recupera</span></div>
+      <span class="eq-op" aria-hidden="true">=</span>
+      <div class="eq-item"><span class="orb r" aria-hidden="true">💪</span>
+        <span class="eq-name">Força</span><span class="eq-desc">= melhora</span></div>
+    </div>
+  </div>
+</article>
+
+<!-- ============ 20 · UMA MENSAGEM PARA VOCÊ ============ -->
+<article class="pg" id="pg-20" data-title="Uma mensagem para você" data-short="Uma mensagem para você">
+  <div class="pg-num" aria-hidden="true">20</div>
+  <h2>Uma mensagem para você</h2>
+  <p class="lead">Você enfrentou dor, exames, remédios, cirurgias e dias difíceis.</p>
+  <p>Mesmo assim, continuou seguindo em frente.</p>
+  <ul class="icon-list">
+    <li><span class="bullet b-red" aria-hidden="true">❤️</span><span>Seu corpo está trabalhando.</span></li>
+    <li><span class="bullet b-teal" aria-hidden="true">🩺</span><span>Os médicos estão ajudando.</span></li>
+    <li><span class="bullet b-gold" aria-hidden="true">🏠</span><span>Sua família está ao seu lado.</span></li>
+    <li><span class="bullet b-green" aria-hidden="true">🌱</span><span>Sua recuperação está acontecendo.</span></li>
+  </ul>
+  <div class="quote">A cura acontece passo a passo — e você está indo em frente. ❤️</div>
+</article>
+
+<!-- ============ 21 · MEU ESPAÇO ============ -->
+<article class="pg" id="pg-21" data-title="Meu espaço" data-short="Meu espaço">
+  <div class="pg-num" aria-hidden="true">21</div>
+  <h2>Meu espaço</h2>
+  <p>Este espaço é seu. Escreva o que quiser — fica guardado só neste aparelho.
+     <span class="saved" id="saved-flag">salvo ✓</span></p>
+
+  <div class="field">
+    <label id="mood-label">Hoje eu estou me sentindo…</label>
+    <ul class="moods" role="group" aria-labelledby="mood-label">
+      <li><button class="mood" data-mood="triste" aria-pressed="false" aria-label="triste">😢</button></li>
+      <li><button class="mood" data-mood="cansado" aria-pressed="false" aria-label="cansado">😴</button></li>
+      <li><button class="mood" data-mood="assim" aria-pressed="false" aria-label="mais ou menos">😐</button></li>
+      <li><button class="mood" data-mood="bem" aria-pressed="false" aria-label="bem">🙂</button></li>
+      <li><button class="mood" data-mood="otimo" aria-pressed="false" aria-label="ótimo">😄</button></li>
+    </ul>
+  </div>
+
+  <div class="field"><label for="f1">O que mais me incomoda é…</label>
+    <textarea id="f1" data-note="incomoda" rows="3"></textarea></div>
+  <div class="field"><label for="f2">O que me ajuda é…</label>
+    <textarea id="f2" data-note="ajuda" rows="3"></textarea></div>
+  <div class="field"><label for="f3">Uma pergunta que eu quero fazer é…</label>
+    <textarea id="f3" data-note="pergunta" rows="3"></textarea></div>
+
+  <div class="btn-group">
+    <button class="btn btn-gold" id="btn-export">⬇️ Baixar o que eu escrevi</button>
+    <button class="btn" id="btn-clear-notes">Limpar</button>
+  </div>
+</article>
+
+<!-- ============ 22 · MISSÃO EM ANDAMENTO ============ -->
+<article class="pg" id="pg-22" data-title="Missão de cura em andamento" data-short="Missão em andamento">
+  <div class="pg-num" aria-hidden="true">22</div>
+  <h2>Missão de cura em andamento</h2>
+  <p>Cada cuidado, exame, remédio e dia de descanso fazem parte da sua melhora.</p>
+  <p>Você está em um caminho de recuperação.</p>
+  <div class="seal">
+    <div class="seal-badge" aria-hidden="true">🚀</div>
+    <div class="quote" style="width:100%">Você é muito forte!</div>
+  </div>
+  <p class="map-note" style="margin-top:3cqi">Material educativo para o paciente e a família.
+     Inspirado no acolhimento do Hospital Pequeno Príncipe. Não é um documento oficial do hospital.</p>
+</article>
+
+</main>
+
+<!-- ==========================================================================
+     MOTOR DO LIVRO — script clássico (funciona em file:// sem servidor).
+     O Three.js entra depois, por import dinâmico, e é opcional.
+     ========================================================================== -->
+<script>
+(function(){
+"use strict";
+
+/* ---------- atalhos ---------- */
+var $  = function(s,r){ return (r||document).querySelector(s); };
+var $$ = function(s,r){ return Array.prototype.slice.call((r||document).querySelectorAll(s)); };
+var clamp = function(v,a,b){ return v<a?a:v>b?b:v; };
+var reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+/* ---------- armazenamento tolerante a falha (modo privado, file://) ---------- */
+var KEY = 'enzo.livro.v1';
+var STORE = (function(){
+  var mem = {}, ok = true;
+  try { window.localStorage.setItem('__t','1'); window.localStorage.removeItem('__t'); }
+  catch(e){ ok = false; }
+  return {
+    read: function(){
+      try { return JSON.parse((ok?localStorage.getItem(KEY):mem[KEY]) || '{}') || {}; }
+      catch(e){ return {}; }
+    },
+    write: function(obj){
+      var s = JSON.stringify(obj);
+      try { if(ok) localStorage.setItem(KEY,s); else mem[KEY]=s; } catch(e){ mem[KEY]=s; }
+    }
+  };
+})();
+
+var save = STORE.read();
+function persist(){ STORE.write(save); }
+if(!save.favs) save.favs = [];
+if(!save.checks) save.checks = {};
+if(!save.notes) save.notes = {};
+if(!save.quiz) save.quiz = {};
+
+/* ---------- estado ---------- */
+var pages = $$('#content .pg');
+var TOTAL = pages.length;
+var state = {
+  idx: clamp(parseInt(save.idx,10)||0, 0, TOTAL-1),
+  single: false,
+  busy: false
+};
+
+var bookEl   = $('#book');
+var spreadEl = $('#spread');
+var contentEl= $('#content');
+
+/* ---------- construção das faces fixas ---------- */
+function mkLeaf(side){
+  var leaf = document.createElement('div');
+  leaf.className = 'leaf ' + side;
+  var face = document.createElement('div');
+  face.className = 'face front';
+  var corner = document.createElement('button');
+  corner.className = 'corner';
+  corner.type = 'button';
+  corner.setAttribute('aria-label', side==='right' ? 'Virar para a próxima página' : 'Voltar uma página');
+  face.appendChild(corner);
+  leaf.appendChild(face);
+  return leaf;
+}
+var leafL = mkLeaf('left'), leafR = mkLeaf('right');
+spreadEl.appendChild(leafL);
+spreadEl.appendChild(leafR);
+var faceL = $('.face', leafL), faceR = $('.face', leafR);
+
+/* ---------- geometria do livro ---------- */
+function spreadOf(i){ return i===0 ? 0 : Math.ceil(i/2); }
+function sidesOf(sp){
+  if(sp===0) return { left:null, right:0 };
+  return { left: 2*sp-1, right: (2*sp < TOTAL) ? 2*sp : null };
+}
+function lastSpread(){ return spreadOf(TOTAL-1); }
+
+/* ---------- colocação das páginas ---------- */
+function place(face, idx){
+  // tira a página antiga da face de volta pro depósito
+  var old = $('.pg', face);
+  if(old){
+    if(old === pages[idx]) return;      // já está no lugar
+    contentEl.appendChild(old);
+  }
+  face.classList.toggle('blank', idx===null || idx===undefined);
+  if(idx===null || idx===undefined) return;
+  face.appendChild(pages[idx]);
+}
+
+function render(){
+  var sp = spreadOf(state.idx);
+  if(state.single){
+    bookEl.classList.add('single');
+    place(faceR, state.idx);
+    place(faceL, null);
+    leafL.style.display = 'none';
+  } else {
+    bookEl.classList.remove('single');
+    leafL.style.display = '';
+    var s = sidesOf(sp);
+    place(faceL, s.left);
+    place(faceR, s.right);
+  }
+  updateChrome();
+  window.dispatchEvent(new CustomEvent('page:shown', { detail:{ idx: state.idx } }));
+}
+
+/* ---------- cromo: contador, favoritos, miniaturas ---------- */
+var counterEl = $('#counter'), favBtn = $('#btn-fav');
+function updateChrome(){
+  var sp = spreadOf(state.idx), s = sidesOf(sp), txt;
+  if(state.single){
+    txt = (state.idx+1) + ' / ' + TOTAL;
+  } else if(s.left===null){
+    txt = '1 / ' + TOTAL;
+  } else {
+    txt = (s.left+1) + (s.right!==null ? '–' + (s.right+1) : '') + ' / ' + TOTAL;
+  }
+  counterEl.textContent = txt;
+  counterEl.setAttribute('aria-label', 'Mostrando ' + txt.replace('/','de') + '. ' + pages[state.idx].dataset.title);
+
+  var isFav = save.favs.indexOf(state.idx) >= 0;
+  favBtn.setAttribute('aria-pressed', isFav ? 'true' : 'false');
+  favBtn.classList.toggle('is-on', isFav);
+
+  $('#btn-prev').disabled = atStart();
+  $('#btn-next').disabled = atEnd();
+
+  $$('#thumbs .thumb').forEach(function(t,i){
+    var here = state.single ? (i===state.idx) : (spreadOf(i)===spreadOf(state.idx));
+    t.setAttribute('aria-current', here ? 'true' : 'false');
+    t.classList.toggle('is-fav', save.favs.indexOf(i)>=0);
+    if(here && t.getAttribute('data-scrolled')!=='1'){
+      t.scrollIntoView({ block:'nearest', inline:'center',
+                         behavior: reduced.matches ? 'auto' : 'smooth' });
+    }
+  });
+  $$('#toc-list .fav-dot').forEach(function(d,i){ d.hidden = save.favs.indexOf(i)<0; });
+
+  save.idx = state.idx; persist();
+}
+
+function atStart(){ return state.single ? state.idx===0 : spreadOf(state.idx)===0; }
+function atEnd(){ return state.single ? state.idx===TOTAL-1 : spreadOf(state.idx)===lastSpread(); }
+
+/* ---------- clone com estado (usado na folha que vira) ---------- */
+function cloneWithState(el){
+  var c = el.cloneNode(true);
+  var s1 = $$('input,textarea,select', el), d1 = $$('input,textarea,select', c);
+  s1.forEach(function(s,i){
+    var d = d1[i]; if(!d) return;
+    if(s.type==='checkbox'||s.type==='radio') d.checked = s.checked; else d.value = s.value;
+  });
+  var s2 = $$('canvas', el), d2 = $$('canvas', c);
+  s2.forEach(function(s,i){
+    var d = d2[i]; if(!d || !s.width) return;
+    try { d.getContext('2d').drawImage(s,0,0); } catch(e){}
+  });
+  c.removeAttribute('id');
+  $$('[id]', c).forEach(function(n){ n.removeAttribute('id'); });
+  $$('.corner', c).forEach(function(n){ n.remove(); });
+  c.setAttribute('aria-hidden','true');
+  return c;
+}
+
+/* ==========================================================================
+   EFEITO DE VIRADA — folha CSS 3D com estufamento, brilho de dobra e sombra
+   que acompanha o movimento.
+
+   NOTA TÉCNICA: a ideia original era virar a folha como uma malha curvada em
+   WebGL, texturizada com um retrato da própria página. Isso é impossível hoje:
+   os navegadores marcam todo SVG com <foreignObject> como dado de origem
+   cruzada, então o retrato não pode virar textura (SecurityError no
+   texImage2D) nem ser lido de volta do canvas. A única saída seria trocar as
+   páginas por imagens prontas — o que acabaria com o texto vivo de que a
+   narração, o quiz e os campos do "Meu espaço" dependem. Por isso a virada é
+   CSS, e o WebGL cuida da cena ao redor.
+   ========================================================================== */
+function buildTurningLeaf(dir){
+  // dir: +1 avança (folha da direita vira pra esquerda), -1 volta
+  var sp = spreadOf(state.idx), s = sidesOf(sp), frontIdx, backIdx, side;
+  if(state.single){
+    side = 'right';
+    frontIdx = state.idx;
+    backIdx  = state.idx + dir;
+  } else if(dir > 0){
+    side = 'right';
+    frontIdx = s.right;
+    backIdx  = sidesOf(sp+1).left;
+  } else {
+    side = 'left';
+    frontIdx = s.left;
+    backIdx  = sidesOf(sp-1).right;
+  }
+  var leaf = document.createElement('div');
+  leaf.className = 'leaf ' + side + ' turning';
+  leaf.style.zIndex = '9';
+  leaf.setAttribute('aria-hidden','true');
+
+  ['front','back'].forEach(function(which){
+    var idx = which==='front' ? frontIdx : backIdx;
+    var f = document.createElement('div');
+    f.className = 'face ' + which;
+    if(idx!==null && idx!==undefined && pages[idx]) f.appendChild(cloneWithState(pages[idx]));
+    else f.classList.add('blank');
+    var sheen = document.createElement('div');
+    sheen.className = 'sheen';
+    f.appendChild(sheen);
+    leaf.appendChild(f);
+  });
+  spreadEl.appendChild(leaf);
+  return leaf;
+}
+
+/* aplica um progresso 0..1 na folha (0 = parada, 1 = virada) */
+function applyTurn(leaf, dir, p){
+  var deg = (dir>0 ? -180 : 180) * p;
+  // curvatura falsa: a folha "estufa" no meio do caminho
+  var bulge = Math.sin(p*Math.PI);
+  leaf.style.transform = 'rotateY(' + deg + 'deg) translateZ(' + (bulge*16) + 'px)';
+  leaf.style.filter = 'drop-shadow(' + (dir>0?-1:1)*bulge*26 + 'px ' + (bulge*10) + 'px ' + (10+bulge*26) + 'px rgba(0,0,0,' + (0.18+bulge*0.24) + '))';
+  var sheens = $$('.sheen', leaf);
+  if(sheens[0]) sheens[0].style.opacity = String(bulge*0.55);
+  if(sheens[1]) sheens[1].style.opacity = String(bulge*0.35);
+}
+
+function finishTurn(dir, leaf, done){
+  var ms = reduced.matches ? 1 : 620;
+  leaf.style.transition = 'transform ' + ms + 'ms cubic-bezier(.3,.05,.25,1), filter ' + ms + 'ms linear';
+  requestAnimationFrame(function(){ applyTurn(leaf, dir, 1); });
+  var ended = false;
+  var end = function(){
+    if(ended) return; ended = true;
+    leaf.remove();
+    done();
+  };
+  leaf.addEventListener('transitionend', function(e){ if(e.propertyName==='transform') end(); });
+  setTimeout(end, ms + 260);   // rede de segurança se o transitionend não vier
+}
+
+function cancelTurn(dir, leaf, done){
+  var ms = reduced.matches ? 1 : 320;
+  leaf.style.transition = 'transform ' + ms + 'ms var(--ease), filter ' + ms + 'ms linear';
+  requestAnimationFrame(function(){ applyTurn(leaf, dir, 0); });
+  var ended = false;
+  var end = function(){ if(ended) return; ended = true; leaf.remove(); done(); };
+  leaf.addEventListener('transitionend', function(e){ if(e.propertyName==='transform') end(); });
+  setTimeout(end, ms + 260);
+}
+
+/* ---------- navegação ---------- */
+function targetIndex(dir){
+  if(state.single) return clamp(state.idx + dir, 0, TOTAL-1);
+  var sp = clamp(spreadOf(state.idx) + dir, 0, lastSpread());
+  var s = sidesOf(sp);
+  return s.left===null ? s.right : s.left;
+}
+
+function go(dir){
+  if(state.busy) return;
+  if(dir>0 && atEnd()) return;
+  if(dir<0 && atStart()) return;
+
+  var next = targetIndex(dir);
+  if(reduced.matches){ state.idx = next; render(); return; }
+
+  state.busy = true;
+  Narrator.stop();
+
+  var land = function(){ state.idx = next; render(); state.busy = false; };
+  var leaf = buildTurningLeaf(dir);
+  applyTurn(leaf, dir, 0);
+  finishTurn(dir, leaf, land);
+}
+
+function jumpTo(i){
+  if(state.busy) return;
+  i = clamp(i,0,TOTAL-1);
+  if(i === state.idx) return;
+  var apply = function(){ state.idx = i; render(); };
+  Narrator.stop();
+  if(document.startViewTransition && !reduced.matches){
+    spreadEl.style.viewTransitionName = 'page';
+    var t = document.startViewTransition(apply);
+    t.finished.then(function(){ spreadEl.style.viewTransitionName = ''; })
+             .catch(function(){ spreadEl.style.viewTransitionName = ''; });
+  } else apply();
+}
+
+/* ---------- arrastar e deslizar ---------- */
+(function(){
+  var drag = null;
+  var INTERACTIVE = 'button,a,input,textarea,select,label,summary,details,.lens-lab,.site,.flip,.mood';
+
+  bookEl.addEventListener('pointerdown', function(e){
+    if(state.busy || reduced.matches) return;
+    if(e.pointerType==='mouse' && e.button!==0) return;
+    var t = e.target;
+    var isCorner = t.classList && t.classList.contains('corner');
+    if(!isCorner && t.closest && t.closest(INTERACTIVE)) return;
+    // não sequestrar a rolagem interna da página
+    drag = { x:e.clientX, y:e.clientY, id:e.pointerId, leaf:null, dir:0, live:false, corner:isCorner };
+  });
+
+  bookEl.addEventListener('pointermove', function(e){
+    if(!drag || e.pointerId!==drag.id) return;
+    var dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+
+    if(!drag.live){
+      if(Math.abs(dx) < 12 || Math.abs(dx) <= Math.abs(dy)) return;   // ainda pode ser rolagem
+      drag.dir = dx < 0 ? 1 : -1;
+      if((drag.dir>0 && atEnd()) || (drag.dir<0 && atStart())){ drag = null; return; }
+      drag.live = true;
+      state.busy = true;
+      Narrator.stop();
+      drag.leaf = buildTurningLeaf(drag.dir);
+      drag.leaf.style.transition = 'none';
+      try{ bookEl.setPointerCapture(e.pointerId); }catch(_){}
+    }
+    var w = bookEl.getBoundingClientRect().width * (state.single ? 1 : 0.5);
+    var p = clamp(Math.abs(dx) / (w*0.85), 0, 1);
+    if(drag.dir>0 ? dx>0 : dx<0) p = 0;
+    drag.p = p;
+    applyTurn(drag.leaf, drag.dir, p);
+    e.preventDefault();
+  }, { passive:false });
+
+  function release(e){
+    if(!drag) return;
+    var d = drag; drag = null;
+    if(!d.live) return;
+    try{ bookEl.releasePointerCapture(d.id); }catch(_){}
+    var dir = d.dir, leaf = d.leaf, p = d.p || 0;
+    var finish = function(){
+      state.idx = targetIndex(dir); render(); state.busy = false;
+    };
+    if(p > 0.32) finishTurn(dir, leaf, finish);
+    else cancelTurn(dir, leaf, function(){ state.busy = false; });
+  }
+  bookEl.addEventListener('pointerup', release);
+  bookEl.addEventListener('pointercancel', release);
+
+  // toque no canto sem arrastar = virar
+  bookEl.addEventListener('click', function(e){
+    var c = e.target.closest && e.target.closest('.corner');
+    if(!c) return;
+    e.preventDefault();
+    go(c.closest('.leaf').classList.contains('right') ? 1 : -1);
+  });
+})();
+
+/* ---------- teclado ---------- */
+document.addEventListener('keydown', function(e){
+  if(e.target.closest && e.target.closest('input,textarea,select,dialog')) return;
+  if(e.metaKey || e.ctrlKey || e.altKey) return;
+  switch(e.key){
+    case 'ArrowRight': case 'PageDown': go(1); e.preventDefault(); break;
+    case 'ArrowLeft':  case 'PageUp':   go(-1); e.preventDefault(); break;
+    case 'Home': jumpTo(0); e.preventDefault(); break;
+    case 'End':  jumpTo(TOTAL-1); e.preventDefault(); break;
+    case 'f': case 'F': toggleFav(); break;
+  }
+});
+
+/* ---------- layout: uma ou duas páginas ---------- */
+function decideLayout(){
+  var w = window.innerWidth, h = window.innerHeight;
+  var single = (w < 860) || (w/h < 1.05) || document.body.classList.contains('reader');
+  if(single !== state.single){ state.single = single; render(); }
+}
+window.addEventListener('resize', decideLayout);
+window.addEventListener('orientationchange', function(){ setTimeout(decideLayout, 120); });
+
+/* ---------- miniaturas e índice ---------- */
+(function(){
+  var thumbs = $('#thumbs'), toc = $('#toc-list');
+  pages.forEach(function(p, i){
+    var t = document.createElement('button');
+    t.className = 'thumb'; t.type = 'button';
+    t.innerHTML = '<span class="fav" aria-hidden="true">♥</span>' +
+                  '<span class="thumb-n">' + (i===0 ? 'Capa' : i) + '</span>' +
+                  '<span class="thumb-t"></span>';
+    $('.thumb-t', t).textContent = p.dataset.short || p.dataset.title;
+    t.setAttribute('aria-label', 'Ir para a página ' + (i+1) + ': ' + p.dataset.title);
+    t.addEventListener('click', function(){ jumpTo(i); });
+    thumbs.appendChild(t);
+
+    var li = document.createElement('li');
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.innerHTML = '<span class="n">' + (i===0 ? '·' : i) + '</span><span class="ttl"></span>' +
+                  '<span class="fav-dot" hidden aria-label="favorita">♥</span>';
+    $('.ttl', b).textContent = p.dataset.title;
+    b.addEventListener('click', function(){ jumpTo(i); $('#panel-toc').close(); });
+    li.appendChild(b); toc.appendChild(li);
+  });
+})();
+
+/* ---------- favoritos ---------- */
+function toggleFav(){
+  var i = save.favs.indexOf(state.idx);
+  if(i>=0){ save.favs.splice(i,1); toast('Favorito removido'); }
+  else { save.favs.push(state.idx); toast('Página favoritada ♥'); }
+  persist(); updateChrome();
+}
+$('#btn-fav').addEventListener('click', toggleFav);
+
+/* ---------- botões de navegação ---------- */
+$('#btn-prev').addEventListener('click', function(){ go(-1); });
+$('#btn-next').addEventListener('click', function(){ go(1); });
+$('#btn-first').addEventListener('click', function(){ jumpTo(0); });
+$('#btn-last').addEventListener('click', function(){ jumpTo(TOTAL-1); });
+
+/* ---------- avisos ---------- */
+var toastEl = $('#toast'), toastT = null;
+function toast(msg){
+  toastEl.textContent = msg;
+  toastEl.classList.add('on');
+  clearTimeout(toastT);
+  toastT = setTimeout(function(){ toastEl.classList.remove('on'); }, 2200);
+}
+
+/* ---------- expõe o essencial pros outros blocos ---------- */
+window.Livro = {
+  pages: pages, state: state, go: go, jumpTo: jumpTo, render: render,
+  toast: toast, save: save, persist: persist, $: $, $$: $$, clamp: clamp,
+  reduced: reduced, bookEl: bookEl, spreadEl: spreadEl,
+  faces: function(){ return [faceL, faceR]; },
+  spreadOf: spreadOf, sidesOf: sidesOf, targetIndex: targetIndex
+};
+
+/* ---------- Narrator é definido no bloco de módulos; stub até lá ---------- */
+window.Narrator = window.Narrator || { stop:function(){} };
+
+/* ---------- arranque ---------- */
+decideLayout();
+render();
+document.body.classList.add('book-ready');
+})();
+</script>
+
+<!-- ==========================================================================
+     MÓDULOS — narração, mapa corporal, gráfico, quiz, diário, tema, zoom…
+     ========================================================================== -->
+<script>
+(function(){
+"use strict";
+var L = window.Livro, $ = L.$, $$ = L.$$, save = L.save, persist = L.persist, clamp = L.clamp;
+
+/* ==========================================================================
+   DADOS CLÍNICOS — edite aqui. Nada disto sai do aparelho.
+   ⚠️ Confirme cada linha com o prontuário antes de entregar o livro.
+   view  : 'frontal' | 'posterior'  (em qual desenho a marca aparece)
+   side  : lado DO ENZO — 'direita' | 'esquerda'
+   cat   : 'osseo'  foco no osso confirmado
+           'artic'  foco em articulação/tendão
+           'acomp'  área apenas acompanhada (NÃO é diagnóstico fechado)
+   cir   : true se aquele local foi abordado cirurgicamente
+   x,y   : posição no desenho (viewBox 0 0 120 280).
+           Atenção: na vista FRONTAL o lado direito do Enzo fica à ESQUERDA
+           da figura; na vista POSTERIOR fica à DIREITA.
+   ========================================================================== */
+var SITES = [
+  { id:'escapula', view:'posterior', side:'direita', cat:'osseo', cir:true, x:76, y:52,
+    label:'Escápula direita',
+    txt:'Foco de infecção confirmado no osso da escápula direita. Este ponto também foi tratado com limpeza cirúrgica.' },
+
+  { id:'mao', view:'frontal', side:'direita', cat:'artic', cir:true, x:23, y:112,
+    label:'3º dedo da mão direita',
+    txt:'Inflamação na articulação e no tendão do terceiro dedo da mão direita. Foi feita limpeza cirúrgica neste local.' },
+
+  { id:'pe', view:'frontal', side:'direita', cat:'osseo', cir:true, x:45, y:191,
+    label:'Pé direito (3º metatarso)',
+    txt:'Foco de infecção confirmado no osso do terceiro metatarso do pé direito, tratado com limpeza cirúrgica.' },
+
+  { id:'tornozelo', view:'frontal', side:'esquerda', cat:'osseo', cir:true, x:74, y:180,
+    label:'Tíbia distal / tornozelo esquerdo',
+    txt:'Foco de infecção confirmado no osso da tíbia, perto do tornozelo esquerdo, tratado com limpeza cirúrgica.' },
+
+  { id:'pulmao', view:'frontal', side:'esquerda', cat:'acomp', cir:false, x:70, y:62,
+    label:'Pulmão esquerdo',
+    txt:'Área do pulmão esquerdo que a equipe ficou ACOMPANHANDO de perto com exames. Acompanhar não é o mesmo que ter um diagnóstico fechado de infecção no osso.' }
+];
+
+/* PCR — lido da tabela da página 17, para não haver dois lugares com o mesmo dado */
+var PCR = (function(){
+  var rows = $$('#pcr-table tbody tr');
+  return rows.map(function(r){
+    var c = r.children;
+    return { d: c[0].textContent.trim(), v: parseFloat(c[1].textContent.replace(',','.')) };
+  }).filter(function(p){ return isFinite(p.v); });
+})();
+
+var QUIZ = [
+  { q:'O que causou a infecção no corpo do Enzo?',
+    a:['Uma bactéria','Um resfriado','Um osso quebrado'], ok:0,
+    fb:'Isso mesmo! Foi uma bactéria chamada Staphylococcus aureus.' },
+  { q:'O que é osteomielite?',
+    a:['Um tipo de exame','Uma infecção que chega até um osso','Um remédio para dor'], ok:1,
+    fb:'Exato — é quando a infecção chega até um osso.' },
+  { q:'Para que servem os antibióticos?',
+    a:['Para tirar foto do osso','Para dar sono','Para enfraquecer ou matar a bactéria'], ok:2,
+    fb:'Certinho! Eles trabalham junto com o corpo para combater a infecção.' },
+  { q:'Sentir cansaço durante a recuperação quer dizer que…',
+    a:['o corpo está trabalhando muito para melhorar','você é fraco','o tratamento parou'], ok:0,
+    fb:'Isso! Cansaço não é fraqueza — é o corpo trabalhando.' },
+  { q:'O que o Enzo pode fazer para ajudar o próprio corpo?',
+    a:['Ficar quietinho sem contar nada','Tomar os remédios, descansar e avisar quando sentir dor','Parar de comer'], ok:1,
+    fb:'Perfeito! Avisar quando sente dor ajuda muito a equipe.' }
+];
+
+/* ==========================================================================
+   MAPA CORPORAL
+   ========================================================================== */
+(function(){
+  var readout = $('#map-readout');
+  if(!readout) return;
+
+  var CAT = {
+    osseo:{ nome:'Foco no osso confirmado', cor:'#d8342a' },
+    artic:{ nome:'Foco em articulação / tendão', cor:'#e07d10' },
+    acomp:{ nome:'Área acompanhada', cor:'#1a7fd4' }
+  };
+
+  function marker(s, n){
+    var NS = 'http://www.w3.org/2000/svg';
+    var g = document.createElementNS(NS,'g');
+    g.setAttribute('class','site');
+    g.setAttribute('tabindex','0');
+    g.setAttribute('role','button');
+    g.setAttribute('data-id', s.id);
+    g.setAttribute('transform','translate(' + s.x + ',' + s.y + ')');
+    g.setAttribute('aria-label', s.label + ' — ' + CAT[s.cat].nome + (s.cir ? ', tratado com cirurgia' : ''));
+
+    var halo = document.createElementNS(NS,'circle');
+    halo.setAttribute('class','halo'); halo.setAttribute('r','11');
+    halo.setAttribute('fill', CAT[s.cat].cor); halo.setAttribute('opacity','0');
+    g.appendChild(halo);
+
+    var shape;
+    if(s.cat === 'artic'){
+      shape = document.createElementNS(NS,'rect');
+      shape.setAttribute('x','-4.6'); shape.setAttribute('y','-4.6');
+      shape.setAttribute('width','9.2'); shape.setAttribute('height','9.2');
+      shape.setAttribute('rx','1.5'); shape.setAttribute('transform','rotate(45)');
+      shape.setAttribute('class','cat-artic');
+    } else {
+      shape = document.createElementNS(NS,'circle');
+      shape.setAttribute('r', '5.8');
+      shape.setAttribute('class', s.cat==='acomp' ? 'cat-acomp' : 'cat-osseo');
+    }
+    g.appendChild(shape);
+
+    if(s.cir){                       // anel externo = tratado com cirurgia
+      var ring = document.createElementNS(NS,'circle');
+      ring.setAttribute('r','9'); ring.setAttribute('class','cat-cir');
+      g.appendChild(ring);
+    }
+    var t = document.createElementNS(NS,'text');
+    t.setAttribute('y','0.5'); t.textContent = String(n);
+    g.appendChild(t);
+
+    function show(){
+      $$('.site').forEach(function(o){ o.classList.remove('sel'); });
+      g.classList.add('sel');
+      $$('.halo', g).forEach(function(h){ h.setAttribute('opacity','.22'); });
+      var c = CAT[s.cat];
+      readout.innerHTML = '';
+      var b = document.createElement('b'); b.textContent = s.label;
+      var p = document.createElement('span'); p.textContent = s.txt;
+      var tag = document.createElement('span');
+      tag.className = 'tag'; tag.style.color = c.cor;
+      var inner = document.createElement('span');
+      inner.textContent = c.nome + (s.cir ? ' · tratado com cirurgia' : '');
+      tag.appendChild(inner);
+      readout.appendChild(b); readout.appendChild(p);
+      readout.appendChild(document.createElement('br')); readout.appendChild(tag);
+      var lado = document.createElement('span');
+      lado.className = 'map-note';
+      lado.style.display = 'block'; lado.style.marginTop = '1cqi';
+      lado.textContent = 'Lado ' + s.side + ' do Enzo · vista ' + s.view + '.';
+      readout.appendChild(lado);
+    }
+    g.addEventListener('click', show);
+    g.addEventListener('keydown', function(e){
+      if(e.key==='Enter'||e.key===' '){ e.preventDefault(); show(); }
+    });
+    return g;
+  }
+
+  $$('.sites').forEach(function(group){
+    var view = group.dataset.view;
+    SITES.forEach(function(s, i){
+      if(s.view === view) group.appendChild(marker(s, i+1));
+    });
+  });
+})();
+
+/* ==========================================================================
+   GRÁFICO DA PCR
+   ========================================================================== */
+(function(){
+  var cv = $('#pcr-canvas'); if(!cv || !PCR.length) return;
+  var tip = $('#pcr-tip');
+  var pts = [], progress = 0, animated = false, raf = null;
+
+  function css(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+
+  function draw(){
+    var box = cv.parentNode.getBoundingClientRect();
+    var w = Math.max(280, box.width - 2 * 12);
+    var h = Math.round(w * 0.5);
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    cv.width = w * dpr; cv.height = h * dpr;
+    cv.style.width = w + 'px'; cv.style.height = h + 'px';
+    var g = cv.getContext('2d');
+    g.setTransform(dpr,0,0,dpr,0,0);
+    g.clearRect(0,0,w,h);
+
+    var padL = 42, padR = 14, padT = 16, padB = 30;
+    var iw = w - padL - padR, ih = h - padT - padB;
+    var max = Math.max.apply(null, PCR.map(function(p){ return p.v; })) * 1.12;
+    var ink = css('--paper-ink-soft') || '#4d5f85';
+    var line = css('--paper-line') || 'rgba(0,0,0,.12)';
+
+    var X = function(i){ return padL + (PCR.length===1 ? iw/2 : iw * i/(PCR.length-1)); };
+    var Y = function(v){ return padT + ih - (v/max) * ih; };
+    pts = PCR.map(function(p,i){ return { x:X(i), y:Y(p.v), d:p.d, v:p.v }; });
+
+    /* faixa esperada (PCR baixa) */
+    var band = Y(0.5);
+    g.fillStyle = 'rgba(31,157,104,.16)';
+    g.fillRect(padL, band, iw, padT + ih - band);
+    g.fillStyle = 'rgba(31,157,104,.9)';
+    g.font = '600 10px ' + (css('--font-body') || 'sans-serif');
+    g.fillText('faixa esperada', padL + 4, band - 4);
+
+    /* eixos */
+    g.strokeStyle = line; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(padL, padT); g.lineTo(padL, padT+ih); g.lineTo(padL+iw, padT+ih); g.stroke();
+
+    g.fillStyle = ink; g.font = '600 10px ' + (css('--font-body') || 'sans-serif');
+    g.textAlign = 'right';
+    [0, max/2, max].forEach(function(v){
+      g.fillText(v.toFixed(1), padL - 6, Y(v) + 3);
+      g.strokeStyle = line; g.beginPath(); g.moveTo(padL, Y(v)); g.lineTo(padL+iw, Y(v)); g.stroke();
+    });
+    g.textAlign = 'center';
+    pts.forEach(function(p){ g.fillText(p.d, p.x, padT + ih + 18); });
+
+    /* curva, desenhada até `progress` */
+    var n = pts.length, shown = 1 + (n-1) * progress;
+    g.strokeStyle = '#e2453b'; g.lineWidth = 3;
+    g.lineJoin = 'round'; g.lineCap = 'round';
+    g.beginPath();
+    for(var i=0;i<n;i++){
+      if(i+1 > shown){
+        var prev = pts[i-1], f = shown - i;
+        if(f > 0 && prev){
+          g.lineTo(prev.x + (pts[i].x-prev.x)*f, prev.y + (pts[i].y-prev.y)*f);
+        }
+        break;
+      }
+      if(i===0) g.moveTo(pts[0].x, pts[0].y); else g.lineTo(pts[i].x, pts[i].y);
+    }
+    g.stroke();
+
+    for(var j=0;j<n;j++){
+      if(j+1 > shown) break;
+      g.beginPath(); g.arc(pts[j].x, pts[j].y, 5.5, 0, Math.PI*2);
+      g.fillStyle = '#e2453b'; g.fill();
+      g.lineWidth = 2.5; g.strokeStyle = css('--paper-1') || '#fff'; g.stroke();
+    }
+  }
+
+  function animate(){
+    if(L.reduced.matches){ progress = 1; draw(); return; }
+    var t0 = performance.now(), dur = 1100;
+    cancelAnimationFrame(raf);
+    (function step(t){
+      var k = clamp((t - t0)/dur, 0, 1);
+      progress = 1 - Math.pow(1-k, 3);
+      draw();
+      if(k < 1) raf = requestAnimationFrame(step);
+    })(t0);
+  }
+
+  cv.addEventListener('pointermove', function(e){
+    var r = cv.getBoundingClientRect();
+    var x = e.clientX - r.left, best = null, bd = 1e9;
+    pts.forEach(function(p){ var d = Math.abs(p.x - x); if(d < bd){ bd = d; best = p; } });
+    if(best && bd < 40){
+      tip.textContent = best.d + ' · PCR ' + best.v.toString().replace('.',',');
+      tip.style.left = (best.x + 12) + 'px';
+      tip.style.top  = (best.y + 12) + 'px';
+      tip.classList.add('on');
+    } else tip.classList.remove('on');
+  });
+  cv.addEventListener('pointerleave', function(){ tip.classList.remove('on'); });
+
+  window.addEventListener('resize', function(){ if(animated) draw(); });
+  window.addEventListener('page:shown', function(e){
+    var pg = document.getElementById('pg-17');
+    if(pg && pg.closest('.face')){ if(!animated){ animated = true; animate(); } else draw(); }
+  });
+})();
+
+/* ==========================================================================
+   QUIZ
+   ========================================================================== */
+(function(){
+  var box = $('#quiz'); if(!box) return;
+  var scoreEl = $('#quiz-score');
+
+  QUIZ.forEach(function(item, qi){
+    var q = document.createElement('div'); q.className = 'q';
+    var h = document.createElement('p'); h.className = 'q-title';
+    h.textContent = (qi+1) + '. ' + item.q;
+    q.appendChild(h);
+    var opts = document.createElement('div'); opts.className = 'q-opts';
+
+    item.a.forEach(function(txt, ai){
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'q-opt';
+      b.innerHTML = '<span class="mark" aria-hidden="true">' + 'ABC'[ai] + '</span>';
+      var s = document.createElement('span'); s.textContent = txt; b.appendChild(s);
+      b.addEventListener('click', function(){ answer(qi, ai); });
+      opts.appendChild(b);
+    });
+    q.appendChild(opts);
+    var fb = document.createElement('p'); fb.className = 'q-fb';
+    q.appendChild(fb);
+    box.appendChild(q);
+  });
+
+  function answer(qi, ai){
+    var item = QUIZ[qi];
+    var q = box.children[qi];
+    var btns = $$('.q-opt', q), fb = $('.q-fb', q);
+    var right = ai === item.ok;
+
+    btns.forEach(function(b,i){
+      b.classList.remove('right','almost');
+      if(i === item.ok) b.classList.add('right');
+      else if(i === ai) b.classList.add('almost');
+    });
+    fb.className = 'q-fb on ' + (right ? 'ok' : 'hm');
+    fb.textContent = right ? ('✅ ' + item.fb) : ('💡 Quase! Olha só: ' + item.fb);
+
+    save.quiz[qi] = right ? 1 : 0;
+    persist(); tally();
+  }
+
+  function tally(){
+    var done = Object.keys(save.quiz).length;
+    if(done < QUIZ.length){ scoreEl.hidden = true; return; }
+    var hits = 0;
+    for(var k in save.quiz) if(save.quiz[k]) hits++;
+    scoreEl.hidden = false;
+    scoreEl.textContent = '🏅 Você respondeu todas! ' + hits + ' de ' + QUIZ.length +
+                          ' de primeira — e agora conhece todas as pistas.';
+  }
+
+  // restaura respostas anteriores
+  Object.keys(save.quiz).forEach(function(k){
+    var qi = +k, q = box.children[qi];
+    if(!q) return;
+    var btns = $$('.q-opt', q), fb = $('.q-fb', q), item = QUIZ[qi];
+    btns[item.ok].classList.add('right');
+    fb.className = 'q-fb on ' + (save.quiz[k] ? 'ok' : 'hm');
+    fb.textContent = (save.quiz[k] ? '✅ ' : '💡 Quase! Olha só: ') + item.fb;
+  });
+  tally();
+})();
+
+/* ==========================================================================
+   CHECKLIST DE RECUPERAÇÃO
+   ========================================================================== */
+(function(){
+  var list = $('#checklist'); if(!list) return;
+  var fill = $('#ck-fill'), count = $('#ck-count');
+  var boxes = $$('input[data-ck]', list);
+
+  function sync(){
+    var n = boxes.filter(function(b){ return b.checked; }).length;
+    count.textContent = n + ' de ' + boxes.length;
+    fill.style.width = (100 * n / boxes.length) + '%';
+    if(n === boxes.length) L.toast('Missão do dia completa! 🌟');
+  }
+  boxes.forEach(function(b){
+    if(save.checks[b.dataset.ck]) b.checked = true;
+    b.addEventListener('change', function(){
+      save.checks[b.dataset.ck] = b.checked; persist(); sync();
+    });
+  });
+  sync();
+})();
+
+/* ==========================================================================
+   MEU ESPAÇO — humor, campos e exportação
+   ========================================================================== */
+(function(){
+  var flag = $('#saved-flag');
+  var t = null;
+  function flash(){ if(!flag) return; flag.classList.add('on');
+    clearTimeout(t); t = setTimeout(function(){ flag.classList.remove('on'); }, 1400); }
+
+  $$('.mood').forEach(function(b){
+    if(save.mood === b.dataset.mood) b.setAttribute('aria-pressed','true');
+    b.addEventListener('click', function(){
+      var already = b.getAttribute('aria-pressed') === 'true';
+      $$('.mood').forEach(function(o){ o.setAttribute('aria-pressed','false'); });
+      if(!already){ b.setAttribute('aria-pressed','true'); save.mood = b.dataset.mood; }
+      else save.mood = null;
+      persist(); flash();
+    });
+  });
+
+  var deb = null;
+  $$('textarea[data-note]').forEach(function(ta){
+    if(save.notes[ta.dataset.note]) ta.value = save.notes[ta.dataset.note];
+    ta.addEventListener('input', function(){
+      clearTimeout(deb);
+      deb = setTimeout(function(){
+        save.notes[ta.dataset.note] = ta.value; persist(); flash();
+      }, 400);
+    });
+  });
+
+  var exp = $('#btn-export');
+  if(exp) exp.addEventListener('click', function(){
+    var moods = { triste:'triste', cansado:'cansado', assim:'mais ou menos', bem:'bem', otimo:'ótimo' };
+    var txt = 'MEU ESPAÇO — Enzo e a Missão de Cura\n' +
+              new Date().toLocaleDateString('pt-BR') + '\n\n' +
+              'Hoje eu estou me sentindo: ' + (moods[save.mood] || '—') + '\n\n' +
+              'O que mais me incomoda é:\n' + (save.notes.incomoda || '—') + '\n\n' +
+              'O que me ajuda é:\n' + (save.notes.ajuda || '—') + '\n\n' +
+              'Uma pergunta que eu quero fazer é:\n' + (save.notes.pergunta || '—') + '\n';
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([txt], { type:'text/plain;charset=utf-8' }));
+    a.download = 'meu-espaco-enzo.txt';
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+    L.toast('Arquivo baixado 📄');
+  });
+
+  var clr = $('#btn-clear-notes');
+  if(clr) clr.addEventListener('click', function(){
+    if(!confirm('Apagar tudo o que você escreveu neste espaço?')) return;
+    save.notes = {}; save.mood = null; persist();
+    $$('textarea[data-note]').forEach(function(ta){ ta.value = ''; });
+    $$('.mood').forEach(function(o){ o.setAttribute('aria-pressed','false'); });
+    L.toast('Espaço limpo');
+  });
+})();
+
+/* ==========================================================================
+   LUPA DA BACTÉRIA (p.3)
+   ========================================================================== */
+(function(){
+  var lab = $('#lens-lab'), lens = $('#lens'); if(!lab || !lens) return;
+  for(var i=0;i<9;i++){
+    var g = document.createElement('div');
+    g.className = 'germ';
+    g.style.left = (8 + Math.random()*78) + '%';
+    g.style.top  = (10 + Math.random()*70) + '%';
+    g.style.transform = 'scale(' + (0.55 + Math.random()*0.7) + ')';
+    lab.appendChild(g);
+  }
+  function move(e){
+    var r = lab.getBoundingClientRect();
+    var x = clamp(e.clientX - r.left, 0, r.width);
+    var y = clamp(e.clientY - r.top, 0, r.height);
+    lens.style.left = x + 'px'; lens.style.top = y + 'px';
+    lens.style.opacity = '1';
+  }
+  lab.addEventListener('pointermove', move);
+  lab.addEventListener('pointerdown', move);
+  lab.addEventListener('pointerleave', function(){ lens.style.opacity = '0'; });
+  lens.style.left = '50%'; lens.style.top = '50%';
+})();
+
+/* ==========================================================================
+   CARTÕES DE EXAME
+   ========================================================================== */
+$$('.flip').forEach(function(b){
+  b.addEventListener('click', function(){
+    b.setAttribute('aria-pressed', b.getAttribute('aria-pressed')==='true' ? 'false' : 'true');
+  });
+});
+
+/* ==========================================================================
+   NARRAÇÃO EM PORTUGUÊS
+   ========================================================================== */
+window.Narrator = (function(){
+  var synth = window.speechSynthesis;
+  var btn = $('#btn-read');
+  var voice = null, chunks = [], at = 0, on = false;
+
+  function pick(){
+    if(!synth) return;
+    var vs = synth.getVoices() || [];
+    voice = vs.filter(function(v){ return /^pt[-_]BR/i.test(v.lang); })[0]
+         || vs.filter(function(v){ return /^pt/i.test(v.lang); })[0]
+         || null;
+  }
+  if(synth){ pick(); synth.addEventListener('voiceschanged', pick); }
+
+  function collect(){
+    var out = [];
+    L.faces().forEach(function(face){
+      var pg = $('.pg', face); if(!pg) return;
+      $$('h2,h3,p,li,.quote,summary,.cover-title,.cover-sub', pg).forEach(function(el){
+        if(el.closest('[aria-hidden="true"]')) return;
+        if(el.classList.contains('sr-only')) return;
+        if(el.querySelector('h2,h3,p,li,.quote')) return;      // evita ler o pai e o filho
+        var t = (el.textContent || '').replace(/\s+/g,' ').trim();
+        if(t.length > 1) out.push({ el: el, t: t });
+      });
+    });
+    return out;
+  }
+
+  function clearMark(){ $$('.narrating').forEach(function(e){ e.classList.remove('narrating'); }); }
+
+  function speakNext(){
+    clearMark();
+    if(!on || at >= chunks.length){ stop(); return; }
+    var c = chunks[at];
+    c.el.classList.add('narrating');
+    var u = new SpeechSynthesisUtterance(c.t);
+    u.lang = 'pt-BR';
+    if(voice) u.voice = voice;
+    u.rate = 0.96; u.pitch = 1.05;
+    u.onend = function(){ at++; speakNext(); };
+    u.onerror = function(){ at++; speakNext(); };
+    synth.speak(u);
+  }
+
+  function start(){
+    if(!synth){ L.toast('Este navegador não tem leitura em voz alta'); return; }
+    chunks = collect();
+    if(!chunks.length) return;
+    at = 0; on = true;
+    btn.setAttribute('aria-pressed','true'); btn.classList.add('is-on');
+    synth.cancel();
+    speakNext();
+    if(!voice) L.toast('Sem voz em português instalada — lendo com a voz padrão');
+  }
+
+  function stop(){
+    on = false; clearMark();
+    if(synth) synth.cancel();
+    if(btn){ btn.setAttribute('aria-pressed','false'); btn.classList.remove('is-on'); }
+  }
+
+  if(btn) btn.addEventListener('click', function(){ on ? stop() : start(); });
+  window.addEventListener('beforeunload', stop);
+
+  return { start:start, stop:stop, isOn:function(){ return on; } };
+})();
+
+/* ==========================================================================
+   TEMA, ZOOM, TELA CHEIA, MODO LEITOR
+   ========================================================================== */
+(function(){
+  var root = document.documentElement;
+  var mq = window.matchMedia('(prefers-color-scheme: light)');
+
+  // `remember` só é true quando o toque foi do usuário: assim a preferência do
+  // sistema continua valendo enquanto ninguém escolher um tema à mão.
+  function setTheme(t, remember){
+    root.setAttribute('data-theme', t);
+    $('meta[name=theme-color]').setAttribute('content', t==='dark' ? '#081633' : '#eaf1fd');
+    if(remember){ save.theme = t; persist(); }
+  }
+  setTheme(save.theme || (mq.matches ? 'light' : 'dark'), false);
+  mq.addEventListener('change', function(e){ if(!save.theme) setTheme(e.matches ? 'light' : 'dark', false); });
+  $('#btn-theme').addEventListener('click', function(){
+    setTheme(root.getAttribute('data-theme')==='dark' ? 'light' : 'dark', true);
+  });
+
+  var zoom = $('#zoom');
+  function setZoom(v){
+    v = clamp(v, 70, 160);
+    zoom.value = v;
+    root.style.setProperty('--zoom', (v/100).toFixed(2));
+    save.zoom = v; persist();
+  }
+  setZoom(save.zoom || 100);
+  zoom.addEventListener('input', function(){ setZoom(+zoom.value); });
+  $('#btn-zoom-in').addEventListener('click',  function(){ setZoom(+zoom.value + 10); });
+  $('#btn-zoom-out').addEventListener('click', function(){ setZoom(+zoom.value - 10); });
+
+  var full = $('#btn-full');
+  full.addEventListener('click', function(){
+    if(document.fullscreenElement) document.exitFullscreen();
+    else if(document.documentElement.requestFullscreen)
+      document.documentElement.requestFullscreen().catch(function(){ L.toast('Tela cheia indisponível'); });
+    else L.toast('Tela cheia indisponível neste navegador');
+  });
+  document.addEventListener('fullscreenchange', function(){
+    full.setAttribute('aria-pressed', document.fullscreenElement ? 'true' : 'false');
+    full.classList.toggle('is-on', !!document.fullscreenElement);
+  });
+
+  var rd = $('#btn-reader');
+  function setReader(v){
+    document.body.classList.toggle('reader', v);
+    rd.setAttribute('aria-pressed', v ? 'true':'false');
+    rd.classList.toggle('is-on', v);
+    save.reader = v; persist();
+    window.dispatchEvent(new Event('resize'));
+  }
+  if(save.reader) setReader(true);
+  rd.addEventListener('click', function(){ setReader(!document.body.classList.contains('reader')); });
+})();
+
+/* ==========================================================================
+   PAINÉIS, COMPARTILHAR, IMPRIMIR
+   ========================================================================== */
+(function(){
+  function wire(btn, dlg){
+    $(btn).addEventListener('click', function(){
+      var d = $(dlg);
+      if(d.showModal) d.showModal(); else d.setAttribute('open','');
+    });
+  }
+  wire('#btn-toc','#panel-toc');
+  wire('#btn-help','#panel-help');
+  $$('[data-close]').forEach(function(b){
+    b.addEventListener('click', function(){ b.closest('dialog').close(); });
+  });
+  $$('dialog.panel').forEach(function(d){
+    d.addEventListener('click', function(e){ if(e.target === d) d.close(); });
+  });
+
+  $('#btn-share').addEventListener('click', function(){
+    var data = { title:'Enzo e a Missão de Cura',
+                 text:'Um livro interativo sobre entender o corpo, os exames e a recuperação.',
+                 url: location.href };
+    if(navigator.share){ navigator.share(data).catch(function(){}); return; }
+    if(navigator.clipboard){
+      navigator.clipboard.writeText(location.href)
+        .then(function(){ L.toast('Link copiado 🔗'); })
+        .catch(function(){ L.toast('Copie o endereço da barra do navegador'); });
+    } else L.toast('Copie o endereço da barra do navegador');
+  });
+
+  $('#btn-print').addEventListener('click', function(){
+    // devolve todas as páginas ao fluxo para imprimir o livro inteiro
+    var content = $('#content');
+    L.pages.forEach(function(p){ content.appendChild(p); });
+    document.body.classList.remove('book-ready');
+    window.print();
+    setTimeout(function(){ document.body.classList.add('book-ready'); L.render(); }, 400);
+  });
+})();
+
+/* ==========================================================================
+   ANIMAÇÕES DISPARADAS AO ABRIR A PÁGINA
+   ========================================================================== */
+/* páginas densas rolam: esmaece a borda de baixo para que dê para perceber */
+(function(){
+  function mark(pg){
+    var over = pg.scrollHeight - pg.clientHeight > 8;
+    pg.classList.toggle('can-scroll', over);
+    pg.classList.toggle('at-end', over && pg.scrollTop + pg.clientHeight >= pg.scrollHeight - 8);
+  }
+  function scan(){ L.faces().forEach(function(f){ var p = $('.pg', f); if(p) mark(p); }); }
+  window.addEventListener('page:shown', function(){ requestAnimationFrame(scan); });
+  window.addEventListener('resize', function(){ requestAnimationFrame(scan); });
+  document.addEventListener('scroll', function(e){
+    if(e.target && e.target.classList && e.target.classList.contains('pg')) mark(e.target);
+  }, true);
+  requestAnimationFrame(scan);
+})();
+
+window.addEventListener('page:shown', function(){
+  var tl = document.getElementById('tl-2');
+  if(tl && tl.closest('.face') && !L.reduced.matches){
+    $$('li', tl).forEach(function(li,i){
+      li.classList.remove('lit');
+      setTimeout(function(){ li.classList.add('lit'); }, 180 + i*220);
+    });
+  }
+});
+})();
+</script>
+
+<!-- ==========================================================================
+     CAMADA 3D — Three.js (WebGPU com queda automática para WebGL 2).
+     Tudo aqui é enfeite: se a CDN estiver bloqueada ou não houver GPU,
+     o livro continua completo. Nenhuma informação existe só no 3D.
+     ========================================================================== -->
+<script>
+(function(){
+"use strict";
+if(!window.Livro) return;
+var L = window.Livro, $ = L.$, $$ = L.$$;
+var qs = new URLSearchParams(location.search);
+if(qs.get('no3d') === '1') return;                  // ?no3d=1 desliga tudo
+
+var THREE = null, renderer = null, scene = null, camera = null;
+var mascots = [], t0 = 0, running = false;
+var glCanvas = $('#gl');
+
+/* ---------- ambiente procedural (dá reflexo às superfícies) ---------- */
+function makeEnv(){
+  var c = document.createElement('canvas'); c.width = 128; c.height = 64;
+  var g = c.getContext('2d');
+  var grd = g.createLinearGradient(0, 0, 0, 64);
+  grd.addColorStop(0.00, '#dbe9ff');
+  grd.addColorStop(0.45, '#4a6bb0');
+  grd.addColorStop(1.00, '#070d1c');
+  g.fillStyle = grd; g.fillRect(0, 0, 128, 64);
+  g.globalAlpha = 0.85;
+  g.fillStyle = '#fff5d8'; g.beginPath(); g.arc(30, 14, 9, 0, 6.3); g.fill();
+  g.fillStyle = '#9fd0ff'; g.beginPath(); g.arc(96, 22, 12, 0, 6.3); g.fill();
+  var t = new THREE.CanvasTexture(c);
+  t.mapping = THREE.EquirectangularReflectionMapping;
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+/* ---------- olhinhos (dão vida aos mascotes, como no mockup) ---------- */
+function eyes(r, sep, fwd){
+  var g = new THREE.Group();
+  var white = new THREE.MeshPhysicalMaterial({ color:0xffffff, roughness:0.15, clearcoat:1 });
+  var black = new THREE.MeshPhysicalMaterial({ color:0x101820, roughness:0.08, clearcoat:1 });
+  [-1, 1].forEach(function(s){
+    var e = new THREE.Mesh(new THREE.SphereGeometry(r, 24, 18), white);
+    e.position.set(s * sep, r * 0.5, fwd);
+    e.scale.z = 0.7;
+    var p = new THREE.Mesh(new THREE.SphereGeometry(r * 0.48, 18, 14), black);
+    p.position.set(s * sep * 1.02, r * 0.5, fwd + r * 0.62);
+    g.add(e); g.add(p);
+  });
+  return g;
+}
+
+/* ---------- bactéria ---------- */
+function makeBacteria(){
+  var group = new THREE.Group();
+  var geo = new THREE.IcosahedronGeometry(1, 5);
+  var pos = geo.attributes.position, v = new THREE.Vector3();
+  for(var i = 0; i < pos.count; i++){
+    v.fromBufferAttribute(pos, i);
+    var d = 1
+      + 0.055 * Math.sin(v.x * 4.1) * Math.cos(v.y * 3.3)
+      + 0.045 * Math.sin(v.z * 5.2 + 1.3)
+      + 0.030 * Math.cos(v.y * 6.7 + v.x * 2.1);
+    v.multiplyScalar(d);
+    pos.setXYZ(i, v.x, v.y, v.z);
+  }
+  geo.computeVertexNormals();
+
+  var body = new THREE.Mesh(geo, new THREE.MeshPhysicalMaterial({
+    color: 0x7c39cb, roughness: 0.38, metalness: 0.0,
+    clearcoat: 0.85, clearcoatRoughness: 0.35,
+    sheen: 0.8, sheenColor: new THREE.Color(0xd0a4ff), sheenRoughness: 0.5
+  }));
+  group.add(body);
+
+  // espinhos, todos num único InstancedMesh
+  var N = 72;
+  var spike = new THREE.InstancedMesh(
+    new THREE.ConeGeometry(0.085, 0.4, 10),
+    new THREE.MeshPhysicalMaterial({ color: 0x5e23a8, roughness: 0.42, clearcoat: 0.6 }),
+    N
+  );
+  var m = new THREE.Matrix4(), q = new THREE.Quaternion();
+  var up = new THREE.Vector3(0, 1, 0), dir = new THREE.Vector3(), one = new THREE.Vector3(1, 1, 1);
+  for(var k = 0; k < N; k++){
+    // distribuição em espiral (Fibonacci) — fica uniforme, sem aglomerados
+    var y = 1 - (k / (N - 1)) * 2;
+    var rad = Math.sqrt(Math.max(0, 1 - y * y));
+    var th = k * 2.399963;
+    dir.set(Math.cos(th) * rad, y, Math.sin(th) * rad).normalize();
+    q.setFromUnitVectors(up, dir);
+    m.compose(dir.clone().multiplyScalar(1.06), q, one);
+    spike.setMatrixAt(k, m);
+  }
+  spike.instanceMatrix.needsUpdate = true;
+  group.add(spike);
+  group.add(eyes(0.19, 0.3, 0.95));
+  return group;
+}
+
+/* ---------- cápsula-herói (antibiótico) ---------- */
+function makeCapsule(){
+  var g = new THREE.Group();
+  var red = new THREE.MeshPhysicalMaterial({ color:0xd8342a, roughness:0.22, clearcoat:1, clearcoatRoughness:0.1 });
+  var white = new THREE.MeshPhysicalMaterial({ color:0xf6f8fc, roughness:0.28, clearcoat:1, clearcoatRoughness:0.12 });
+
+  var rTop = new THREE.Mesh(new THREE.CylinderGeometry(0.52, 0.52, 0.5, 40), red);
+  rTop.position.y = 0.25;
+  var rCap = new THREE.Mesh(new THREE.SphereGeometry(0.52, 40, 24, 0, Math.PI*2, 0, Math.PI/2), red);
+  rCap.position.y = 0.5;
+  var wBot = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.62, 40), white);
+  wBot.position.y = -0.31;
+  var wCap = new THREE.Mesh(new THREE.SphereGeometry(0.5, 40, 24, 0, Math.PI*2, Math.PI/2, Math.PI/2), white);
+  wCap.position.y = -0.62;
+  g.add(rTop, rCap, wBot, wCap);
+
+  // capinha de herói
+  var cape = new THREE.Mesh(
+    new THREE.SphereGeometry(0.75, 24, 18, 0, Math.PI*0.9, 0.35, 1.15),
+    new THREE.MeshPhysicalMaterial({ color:0xc0271d, roughness:0.55, side:THREE.DoubleSide, sheen:0.6 })
+  );
+  cape.position.set(0, 0.05, -0.28); cape.rotation.y = Math.PI * 1.05;
+  g.add(cape);
+  g.add(eyes(0.13, 0.18, 0.5));
+  return g;
+}
+
+/* ---------- escudo (defesa do corpo) ---------- */
+function makeShield(){
+  var s = new THREE.Shape();
+  s.moveTo(0, 1.02);
+  s.bezierCurveTo(0.72, 0.88, 0.82, 0.62, 0.82, 0.18);
+  s.bezierCurveTo(0.82, -0.48, 0.38, -0.9, 0, -1.08);
+  s.bezierCurveTo(-0.38, -0.9, -0.82, -0.48, -0.82, 0.18);
+  s.bezierCurveTo(-0.82, 0.62, -0.72, 0.88, 0, 1.02);
+
+  var geo = new THREE.ExtrudeGeometry(s, {
+    depth: 0.16, bevelEnabled: true, bevelSegments: 4,
+    bevelSize: 0.06, bevelThickness: 0.06, curveSegments: 24
+  });
+  geo.center();
+  var g = new THREE.Group();
+  g.add(new THREE.Mesh(geo, new THREE.MeshPhysicalMaterial({
+    color: 0x1c58c4, metalness: 0.72, roughness: 0.24, clearcoat: 0.9
+  })));
+
+  var cross = new THREE.MeshPhysicalMaterial({ color:0xf4f8ff, roughness:0.2, metalness:0.1, clearcoat:1 });
+  var a = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.22, 0.1), cross);
+  var b = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.72, 0.1), cross);
+  a.position.z = b.position.z = 0.19;
+  g.add(a, b);
+  return g;
+}
+
+/* ---------- osso ---------- */
+function makeBone(){
+  var g = new THREE.Group();
+  var mat = new THREE.MeshPhysicalMaterial({
+    color: 0xf2e8d2, roughness: 0.52, clearcoat: 0.25,
+    sheen: 0.5, sheenColor: new THREE.Color(0xfff6e0)
+  });
+  var shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.23, 0.23, 1.5, 28), mat);
+  shaft.rotation.z = Math.PI / 2;
+  g.add(shaft);
+  [-1, 1].forEach(function(s){
+    [-1, 1].forEach(function(t){
+      var k = new THREE.Mesh(new THREE.SphereGeometry(0.3, 24, 18), mat);
+      k.position.set(s * 0.78, t * 0.24, 0);
+      g.add(k);
+    });
+  });
+  return g;
+}
+
+/* ---------- hemácia ---------- */
+function makeCell(){
+  var geo = new THREE.TorusGeometry(0.3, 0.3, 20, 44);
+  geo.scale(1, 1, 0.55);
+  return new THREE.Mesh(geo, new THREE.MeshPhysicalMaterial({
+    color: 0xd0342c, roughness: 0.34, clearcoat: 0.7,
+    sheen: 0.7, sheenColor: new THREE.Color(0xff8a7a)
+  }));
+}
+
+/* ==========================================================================
+   CENA DE FUNDO
+   ========================================================================== */
+function buildScene(){
+  scene = new THREE.Scene();
+  var env = makeEnv();
+  scene.environment = env;
+
+  camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
+  camera.position.set(0, 0, 9);
+
+  scene.add(new THREE.HemisphereLight(0xbdd6ff, 0x11162c, 1.15));
+  var key = new THREE.DirectionalLight(0xffffff, 2.4);
+  key.position.set(4, 6, 6); scene.add(key);
+  var rimA = new THREE.PointLight(0x6aa8ff, 42, 26); rimA.position.set(-7, 3, 3); scene.add(rimA);
+  var rimB = new THREE.PointLight(0xffb45c, 28, 26); rimB.position.set(7, -2, 4); scene.add(rimB);
+
+  /* y fica entre -0.9 e +2.2: acima disso some atrás da barra do topo,
+     abaixo some atrás dos controles e das miniaturas. */
+  var defs = [
+    { make: makeBacteria, s: 0.62, side:-1, y: 2.05, spread:0.045, spin: 0.22 },
+    { make: makeCell,     s: 0.66, side:-1, y: 0.45, spread:0.085, spin: 0.40 },
+    { make: makeShield,   s: 0.60, side:-1, y:-0.85, spread:0.040, spin: 0.18 },
+    { make: makeCapsule,  s: 0.70, side: 1, y: 1.85, spread:0.050, spin: 0.30 },
+    { make: makeBone,     s: 0.58, side: 1, y: 0.35, spread:0.088, spin: 0.26 },
+    { make: makeBacteria, s: 0.34, side: 1, y:-0.80, spread:0.038, spin:-0.34 }
+  ];
+  defs.forEach(function(d, i){
+    var o = d.make();
+    o.scale.setScalar(d.s);
+    o.userData = {
+      side: d.side, baseY: d.y, spin: d.spin, spread: d.spread,
+      phase: i * 1.7, bob: 0.16 + (i % 3) * 0.06
+    };
+    scene.add(o); mascots.push(o);
+  });
+  layout();
+}
+
+/* posiciona os mascotes nas laterais, fora de onde o livro fica */
+function layout(){
+  var d = camera.position.z;
+  var vh = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * d;
+  var vw = vh * camera.aspect;
+  mascots.forEach(function(o){
+    var u = o.userData;
+    o.position.x = u.side * vw * (0.5 - u.spread);
+    o.position.z = -1.2;
+  });
+}
+
+var pointer = { x:0, y:0, tx:0, ty:0 };
+function onMove(e){
+  pointer.tx = (e.clientX / window.innerWidth - 0.5) * 2;
+  pointer.ty = (e.clientY / window.innerHeight - 0.5) * 2;
+}
+
+function tick(){
+  if(!running) return;
+  requestAnimationFrame(tick);
+  var t = (performance.now() - t0) / 1000;
+  pointer.x += (pointer.tx - pointer.x) * 0.045;
+  pointer.y += (pointer.ty - pointer.y) * 0.045;
+  camera.position.x = pointer.x * 0.55;
+  camera.position.y = -pointer.y * 0.42;
+  camera.lookAt(0, 0, 0);
+
+  mascots.forEach(function(o){
+    var u = o.userData;
+    o.rotation.y += u.spin * 0.006;
+    o.rotation.x = Math.sin(t * 0.4 + u.phase) * 0.16;
+    o.position.y = u.baseY + Math.sin(t * 0.55 + u.phase) * u.bob;
+  });
+  renderer.render(scene, camera);
+}
+
+function resize(){
+  if(!renderer) return;
+  var w = window.innerWidth, h = window.innerHeight;
+  if(!w || !h) return;
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h, false);
+  layout();
+}
+
+
+/* ==========================================================================
+   ARRANQUE — só entra se a biblioteca carregar
+   ========================================================================== */
+import('three/webgpu').then(function(mod){
+  THREE = mod;
+  renderer = new THREE.WebGPURenderer({
+    canvas: glCanvas, antialias: true, alpha: true,
+    forceWebGL: qs.get('renderer') === 'webgl'
+  });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.05;
+  // WebGPU sobe de forma assíncrona; se não houver adaptador, o próprio
+  // Three.js cai para WebGL 2 aqui dentro.
+  return renderer.init ? renderer.init() : null;
+}).then(function(){
+  t0 = performance.now();
+  buildScene();
+  resize();
+  glCanvas.classList.add('ready');
+
+  if(!L.reduced.matches){
+    running = true;
+    window.addEventListener('pointermove', onMove, { passive:true });
+    tick();
+  } else {
+    renderer.render(scene, camera);    // um quadro parado
+  }
+
+  window.addEventListener('resize', resize);
+  document.addEventListener('visibilitychange', function(){
+    if(document.hidden){ running = false; }
+    else if(!L.reduced.matches){ running = true; tick(); }
+  });
+}).catch(function(err){
+  // CDN bloqueada, sem GPU, navegador antigo: o livro segue inteiro sem 3D.
+  console.info('Camada 3D indisponível — o livro continua funcionando.', err && err.message);
+  glCanvas.remove();
+});
+})();
+</script>
+
+</body>
+</html>
