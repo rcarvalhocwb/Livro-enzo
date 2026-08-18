@@ -155,6 +155,7 @@ body::before{
 }
 .btn:hover{transform:translateY(-2px);border-color:color-mix(in oklab,var(--blue-500) 55%,transparent)}
 .btn:active{transform:translateY(0) scale(.97)}
+.btn[disabled]{opacity:.35;pointer-events:none}
 .btn[aria-pressed="true"],.btn.is-on{
   background:linear-gradient(140deg,var(--blue-500),var(--blue-700));
   color:#fff;border-color:transparent;box-shadow:0 6px 20px rgba(26,82,184,.45)
@@ -269,9 +270,13 @@ body::before{
   transition:transform .2s var(--ease), opacity .2s;
 }
 .nav-arrow:hover{transform:translate(0,0) scale(1.09)}
-.nav-arrow.prev{left:clamp(-26px,-2.2cqi,-8px)}
-.nav-arrow.next{right:clamp(-26px,-2.2cqi,-8px)}
+/* inteiramente fora da folha — antes cobriam o texto e os campos de escrita */
+.nav-arrow.prev{left:0;translate:-118% -50%}
+.nav-arrow.next{right:0;translate:118% -50%}
 .nav-arrow[disabled]{opacity:.25;pointer-events:none}
+/* em tela estreita não sobra margem ao lado do livro: some com elas e deixa
+   as setas da barra de baixo, que nunca cobrem conteúdo */
+@media (max-width:1100px){ .nav-arrow{display:none} }
 .nav-arrow svg{width:46%;height:46%}
 
 /* alça de arrastar o canto */
@@ -599,6 +604,7 @@ body::before{
 .thumbs{
   display:flex;gap:10px;overflow-x:auto;padding:10px;scroll-snap-type:x mandatory;
   scrollbar-width:thin;
+  flex-wrap:nowrap;   /* vence o flex-wrap:wrap herdado de .bar */
 }
 .thumb{
   flex:0 0 auto;width:88px;scroll-snap-align:center;border-radius:12px;overflow:hidden;
@@ -939,7 +945,9 @@ body.book-ready .book-shell{display:grid}
 
     <div class="btn-group" style="margin:0 auto">
       <button class="btn btn-icon" id="btn-first" aria-label="Ir para a capa">«</button>
+      <button class="btn btn-icon" id="btn-prev-b" aria-label="Página anterior">‹</button>
       <div class="counter" id="counter" role="status" aria-live="polite">1 / 23</div>
+      <button class="btn btn-icon" id="btn-next-b" aria-label="Próxima página">›</button>
       <button class="btn btn-icon" id="btn-last" aria-label="Ir para a última página">»</button>
     </div>
 
@@ -1677,8 +1685,9 @@ function updateChrome(){
   favBtn.setAttribute('aria-pressed', isFav ? 'true' : 'false');
   favBtn.classList.toggle('is-on', isFav);
 
-  $('#btn-prev').disabled = atStart();
-  $('#btn-next').disabled = atEnd();
+  var noPrev = atStart(), noNext = atEnd();
+  $('#btn-prev').disabled = $('#btn-prev-b').disabled = noPrev;
+  $('#btn-next').disabled = $('#btn-next-b').disabled = noNext;
 
   $$('#thumbs .thumb').forEach(function(t,i){
     var here = state.single ? (i===state.idx) : (spreadOf(i)===spreadOf(state.idx));
@@ -1962,6 +1971,8 @@ $('#btn-fav').addEventListener('click', toggleFav);
 /* ---------- botões de navegação ---------- */
 $('#btn-prev').addEventListener('click', function(){ go(-1); });
 $('#btn-next').addEventListener('click', function(){ go(1); });
+$('#btn-prev-b').addEventListener('click', function(){ go(-1); });
+$('#btn-next-b').addEventListener('click', function(){ go(1); });
 $('#btn-first').addEventListener('click', function(){ jumpTo(0); });
 $('#btn-last').addEventListener('click', function(){ jumpTo(TOTAL-1); });
 
