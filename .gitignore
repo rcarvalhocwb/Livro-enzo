@@ -1,0 +1,4 @@
+# Documentos clínicos não entram no repositório.
+*.pdf
+prontuario*
+laudo*

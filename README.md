@@ -83,9 +83,12 @@ para não existir o mesmo dado em dois lugares. Edite as linhas da tabela e o gr
 A tabela fica escondida visualmente (`sr-only`) porque o gráfico já mostra os mesmos dados —
 ela continua existindo para quem usa leitor de tela.
 
-> ⚠️ Os valores que estão lá foram **lidos dos diagramas ilustrados**, em mg/L, e ainda não
-> foram conferidos com o laudo. As datas em especial são aproximadas. Troque pelos exames
-> reais antes de entregar o livro.
+Os três pontos que estão lá vêm do **laudo laboratorial** (10/08, 12/08 e 17/08 de 2026),
+em mg/L, com a faixa de referência do próprio laudo: esperado abaixo de 10 mg/L. Para
+acrescentar exames novos, basta incluir uma linha na tabela.
+
+> Nenhum documento clínico é guardado no repositório — o `.gitignore` bloqueia PDFs e
+> arquivos de prontuário e laudo.
 
 ### `QUIZ` — as cinco perguntas da página 19
 

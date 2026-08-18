@@ -1463,20 +1463,16 @@ body.book-ready .book-shell{display:grid}
 
   <table class="data-table sr-only" id="pcr-table">
     <caption>Inflamação no sangue (PCR) ao longo do tratamento.
-      <b>Valores lidos do rascunho ilustrado e ainda por conferir com o laudo —
-      as datas em especial são aproximadas.</b></caption>
+      Valores do laudo laboratorial. O esperado é ficar abaixo de 10 mg/L.</caption>
     <thead><tr><th scope="col">Data</th><th scope="col">PCR (mg/L)</th></tr></thead>
     <tbody>
-      <tr><td>01/06</td><td>296,2</td></tr>
-      <tr><td>03/06</td><td>243,2</td></tr>
-      <tr><td>06/06</td><td>252,1</td></tr>
-      <tr><td>09/06</td><td>155,5</td></tr>
-      <tr><td>12/06</td><td>43,0</td></tr>
-      <tr><td>17/06</td><td>22,3</td></tr>
+      <tr><td>10/08</td><td>153,5</td></tr>
+      <tr><td>12/08</td><td>61,8</td></tr>
+      <tr><td>17/08</td><td>22,3</td></tr>
     </tbody>
   </table>
   <p class="map-note">A linha descendo quer dizer que a inflamação está diminuindo. 📉
-     <b>Valores lidos do rascunho ilustrado, ainda por conferir com o laudo.</b></p>
+     Em uma semana ela caiu de 153,5 para 22,3 — quase sete vezes menos.</p>
 </article>
 
 <!-- ============ 18 · PERGUNTAS QUE VOCÊ PODE TER ============ -->
@@ -2258,12 +2254,12 @@ var QUIZ = [
     pts = PCR.map(function(p,i){ return { x:X(i), y:Y(p.v), d:p.d, v:p.v }; });
 
     /* faixa esperada (PCR baixa) */
-    var band = Y(5);
+    var band = Y(10);
     g.fillStyle = 'rgba(31,157,104,.16)';
     g.fillRect(padL, band, iw, padT + ih - band);
     g.fillStyle = 'rgba(31,157,104,.9)';
     g.font = '600 10px ' + (css('--font-body') || 'sans-serif');
-    g.fillText('faixa esperada', padL + 4, band - 4);
+    g.fillText('esperado: abaixo de 10', padL + 4, band - 4);
 
     /* eixos */
     g.strokeStyle = line; g.lineWidth = 1;
