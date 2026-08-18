@@ -401,7 +401,7 @@ body::before{
 .timeline li.lit .bullet{transform:scale(1.14)}
 
 /* --- lupa da bactéria (p.3) --- */
-.lens-lab{position:relative;height:34cqi;border-radius:3.4cqi;overflow:hidden;margin-bottom:3cqi;
+.lens-lab{position:relative;height:26cqi;border-radius:3.4cqi;overflow:hidden;margin-bottom:3cqi;
   background:radial-gradient(circle at 50% 45%,#dfeaff,#b9cdf0);border:1px solid var(--paper-line);
   touch-action:none;cursor:crosshair}
 :root[data-theme="dark"] .lens-lab{background:radial-gradient(circle at 50% 45%,#1c2f57,#0e1b36)}
@@ -443,13 +443,21 @@ body::before{
 /* categorias — cor + forma + rótulo, nunca só cor */
 .cat-osseo{color:#d8342a;fill:#d8342a;stroke:#8d1810}
 .cat-artic{color:#e07d10;fill:#e07d10;stroke:#8c4a00}
-.cat-acomp{color:#1a7fd4;fill:none;stroke:#1a7fd4;stroke-dasharray:3 2.2;stroke-width:2.2}
+.cat-acomp{color:#c98a00;fill:none;stroke:#c98a00;stroke-dasharray:3 2.2;stroke-width:2.2}
 .cat-cir{fill:none;stroke:#ffffff;stroke-width:2}
 :root[data-theme="dark"] .cat-cir{stroke:#0b1730}
+:root[data-theme="dark"] .cat-acomp{color:#ffc73d;stroke:#ffc73d}
 .map-legend{list-style:none;margin:0 0 2.4cqi;padding:0;display:grid;gap:1.6cqi;font-size:3.1cqi}
 .map-legend li{display:flex;gap:2cqi;align-items:flex-start;line-height:1.3}
 .map-legend svg{flex:0 0 auto;width:5.4cqi;height:5.4cqi;margin-top:-.2cqi}
 .map-note{font-size:2.9cqi;color:var(--paper-ink-soft);line-height:1.4}
+.dobra{border-top:1px solid var(--paper-line);margin-top:2cqi}
+.dobra summary{cursor:pointer;list-style:none;padding:2.4cqi 0;min-height:11cqi;display:flex;
+  align-items:center;gap:2cqi;font-family:var(--font-display);font-weight:850;font-size:3.6cqi;
+  color:var(--blue-700)}
+.dobra summary::-webkit-details-marker{display:none}
+.dobra summary::after{content:"▾";margin-left:auto;transition:transform .2s var(--ease)}
+.dobra[open] summary::after{transform:rotate(180deg)}
 .map-readout{
   min-height:11cqi;border-radius:3cqi;padding:2.4cqi 3cqi;font-size:3.3cqi;line-height:1.35;
   background:color-mix(in oklab,var(--blue-500) 12%,transparent);
@@ -493,7 +501,13 @@ body::before{
 .progress-fill{height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,#4fd39a,var(--green));
   transition:width .5s var(--ease)}
 
-.quiz{display:grid;gap:2.6cqi;margin-bottom:3cqi}
+.quiz{display:grid;margin-bottom:2.4cqi}
+.quiz .q{display:none}
+.quiz .q.atual{display:block}
+.quiz-bar{display:flex;align-items:center;gap:2.4cqi;margin-bottom:2.4cqi;font-size:3.1cqi;font-weight:700}
+.quiz-nav{justify-content:space-between;margin-bottom:2.4cqi}
+.quiz-nav .btn{background:var(--paper-card);border-color:var(--paper-line);color:var(--paper-ink);
+  font-size:3.2cqi;min-height:10cqi;padding:0 3cqi}
 .q{background:var(--paper-card);border:1px solid var(--paper-line);border-radius:3cqi;padding:2.8cqi}
 .q-title{font-family:var(--font-display);font-weight:800;font-size:3.7cqi;margin:0 0 2cqi;color:var(--blue-700)}
 .q-opts{display:grid;gap:1.4cqi}
@@ -576,9 +590,9 @@ body::before{
 .battery.full .battery-fill{width:88%;background:linear-gradient(90deg,#4fd39a,#1f9d68)}
 
 /* --- selo final --- */
-.seal{display:grid;justify-items:center;gap:2cqi;text-align:center;margin-top:2cqi}
+.seal{display:grid;justify-items:center;gap:1.6cqi;text-align:center;margin-top:1.4cqi}
 .seal-badge{
-  width:26cqi;height:26cqi;border-radius:50%;display:grid;place-items:center;font-size:12cqi;
+  width:19cqi;height:19cqi;border-radius:50%;display:grid;place-items:center;font-size:9cqi;
   background:radial-gradient(circle at 34% 28%,#fff6,transparent 55%),linear-gradient(150deg,var(--gold),var(--gold-deep));
   box-shadow:0 2cqi 4cqi rgba(232,164,22,.45), inset 0 -1.4cqi 2.6cqi rgba(0,0,0,.2);
   animation:pulse 3.2s var(--ease) infinite
@@ -587,7 +601,8 @@ body::before{
 
 /* slot de arte 3D (troque pelo PNG do render) */
 .art{
-  position:relative;border-radius:3cqi;overflow:hidden;margin:0 0 3cqi;aspect-ratio:1.5;
+  position:relative;border-radius:3cqi;overflow:hidden;margin:0 0 2.4cqi;aspect-ratio:2.6;
+  max-height:30cqi;
   background:radial-gradient(circle at 50% 30%,color-mix(in oklab,var(--blue-500) 26%,transparent),transparent 62%),
              linear-gradient(160deg,var(--paper-2),var(--paper-card));
   border:1px dashed var(--paper-line);display:grid;place-items:center;
@@ -719,6 +734,11 @@ body.reader .stage{align-items:start;overflow:auto}
   input[type=range]{width:84px}
 }
 @media (max-width:640px){
+  /* No celular o livro deixa de tirar a largura da altura: ele ocupa a tela
+     inteira e a página rola por dentro. Sem isto a letra cai para ~11px,
+     porque a largura vira uma fração da altura que sobra do cromo. */
+  .book,.book.single{width:100%;aspect-ratio:auto;height:100%}
+  .foot{display:none}
   .app{padding:6px;gap:8px}
   .bar{border-radius:20px;padding:8px 10px;gap:6px}
   .brand-mark{width:38px;height:38px;font-size:20px;border-radius:12px}
@@ -792,6 +812,7 @@ body.book-ready .book-shell{display:grid}
 .cover-title b{font-family:var(--font-display);font-weight:850;font-size:5cqi;line-height:1.06;
   letter-spacing:.01em;color:#fff}
 .cover-sub{font-size:3.4cqi;color:#c4d8fb;margin:0;max-width:34ch}
+.cover-note{font-size:2.5cqi;line-height:1.35;color:#8fa9d4;margin:0;max-width:46ch}
 .pg.cover .art{aspect-ratio:2.1;border-color:rgba(255,255,255,.18);
   background:radial-gradient(circle at 50% 34%,rgba(91,147,240,.32),transparent 64%)}
 .pg.cover .art-ph{color:#a9c2ea}
@@ -946,7 +967,7 @@ body.book-ready .book-shell{display:grid}
     <div class="btn-group" style="margin:0 auto">
       <button class="btn btn-icon" id="btn-first" aria-label="Ir para a capa">«</button>
       <button class="btn btn-icon" id="btn-prev-b" aria-label="Página anterior">‹</button>
-      <div class="counter" id="counter" role="status" aria-live="polite">1 / 23</div>
+      <div class="counter" id="counter" role="status" aria-live="polite">1 / 24</div>
       <button class="btn btn-icon" id="btn-next-b" aria-label="Próxima página">›</button>
       <button class="btn btn-icon" id="btn-last" aria-label="Ir para a última página">»</button>
     </div>
@@ -976,7 +997,7 @@ body.book-ready .book-shell{display:grid}
 <dialog class="panel" id="panel-toc" aria-labelledby="toc-h">
   <button class="btn btn-icon panel-close" data-close aria-label="Fechar">✕</button>
   <h2 id="toc-h">Índice</h2>
-  <p>23 páginas. As favoritas aparecem com ♥.</p>
+  <p><span id="toc-count">24</span> páginas. As favoritas aparecem com ♥.</p>
   <ul class="toc" id="toc-list"></ul>
 </dialog>
 
@@ -1018,12 +1039,15 @@ body.book-ready .book-shell{display:grid}
       <div><div class="mission-title">Missão de hoje</div>
         <div>Entender como meu corpo está sendo cuidado.</div></div>
     </div>
+    <p class="cover-note">Material educativo para o paciente e a família.
+       Inspirado no acolhimento do Hospital Pequeno Príncipe.
+       Não é um documento oficial do hospital.</p>
   </div>
 </article>
 
 <!-- ============ 1 · OLÁ, ENZO! ============ -->
 <article class="pg" id="pg-1" data-title="Olá, Enzo!" data-short="Olá, Enzo!">
-  <div class="pg-num" aria-hidden="true">1</div>
+  <div class="pg-num" aria-hidden="true">2</div>
   <h2>Olá, Enzo!</h2>
   <p class="lead">Este livrinho foi feito para ajudar você a entender melhor o que aconteceu no seu corpo.</p>
   <p>Você passou por dias importantes, com exames, remédios, cirurgias e muitos cuidados.</p>
@@ -1041,11 +1065,12 @@ body.book-ready .book-shell{display:grid}
 
 <!-- ============ 2 · O QUE ACONTECEU COMIGO ============ -->
 <article class="pg" id="pg-2" data-title="O que aconteceu comigo?" data-short="O que aconteceu?">
-  <div class="pg-num" aria-hidden="true">2</div>
+  <div class="pg-num" aria-hidden="true">3</div>
   <h2>O que aconteceu comigo?</h2>
   <div class="cols">
     <div>
-      <p>Uma bactéria chamada <strong>Staphylococcus aureus</strong> entrou no seu corpo e causou uma infecção.</p>
+      <p>Uma bactéria chamada <strong>Staphylococcus aureus</strong>, do tipo <strong>MRSA</strong>,
+         entrou no seu corpo e causou uma infecção.</p>
       <p>Essa bactéria conseguiu chegar ao sangue e, depois, formar <strong>focos</strong> em alguns lugares do corpo.</p>
       <p>Por isso você sentiu dor, febre, cansaço e precisou de muitos cuidados.</p>
     </div>
@@ -1062,7 +1087,7 @@ body.book-ready .book-shell{display:grid}
 
 <!-- ============ 3 · O QUE É UMA BACTÉRIA ============ -->
 <article class="pg" id="pg-3" data-title="O que é uma bactéria?" data-short="O que é uma bactéria?">
-  <div class="pg-num" aria-hidden="true">3</div>
+  <div class="pg-num" aria-hidden="true">4</div>
   <h2>O que é uma bactéria?</h2>
   <p>Bactérias são seres tão pequenos que só podem ser vistos com microscópio.</p>
   <p>Algumas bactérias não fazem mal. Mas outras podem causar infecções.</p>
@@ -1089,7 +1114,7 @@ body.book-ready .book-shell{display:grid}
 
 <!-- ============ 4 · POR QUE DOEU EM VÁRIOS LUGARES ============ -->
 <article class="pg" id="pg-4" data-title="Por que doeu em vários lugares?" data-short="Por que doeu em vários lugares?">
-  <div class="pg-num" aria-hidden="true">4</div>
+  <div class="pg-num" aria-hidden="true">5</div>
   <h2>Por que doeu em vários lugares?</h2>
   <div class="cols">
     <div>
@@ -1107,7 +1132,7 @@ body.book-ready .book-shell{display:grid}
         <li><span class="bullet b-orange" aria-hidden="true">2</span><span>Dedo da mão <b>direita</b></span></li>
         <li><span class="bullet b-orange" aria-hidden="true">3</span><span>Pé <b>direito</b></span></li>
         <li><span class="bullet b-orange" aria-hidden="true">4</span><span>Tornozelo / perna <b>esquerda</b></span></li>
-        <li><span class="bullet b-teal" aria-hidden="true">5</span><span>Pulmão <b>esquerdo</b> (área acompanhada)</span></li>
+        <li><span class="bullet b-gold" aria-hidden="true">5</span><span>Pulmão <b>esquerdo</b> (área acompanhada)</span></li>
       </ul>
     </div>
   </div>
@@ -1115,7 +1140,7 @@ body.book-ready .book-shell{display:grid}
 
 <!-- ============ 5 · MAPA DA MISSÃO DE CURA ============ -->
 <article class="pg" id="pg-5" data-title="Mapa da Missão de Cura" data-short="Mapa da missão">
-  <div class="pg-num" aria-hidden="true">5</div>
+  <div class="pg-num" aria-hidden="true">6</div>
   <h2>Mapa da Missão de Cura</h2>
   <p>Aqui estão os principais lugares onde a equipe encontrou a infecção e acompanhou a recuperação
      do seu corpo. Toque em cada marca para saber o que ela significa.</p>
@@ -1162,14 +1187,15 @@ body.book-ready .book-shell{display:grid}
     <span>Cada símbolo conta uma coisa diferente sobre aquele lugar do corpo.</span>
   </div>
 
-  <h3>O que cada símbolo quer dizer</h3>
+  <details class="dobra" open>
+  <summary>O que cada símbolo quer dizer</summary>
   <ul class="map-legend">
     <li><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" class="cat-osseo"/></svg>
       <span><b>Foco no osso confirmado</b> — a equipe confirmou infecção nesse osso.</span></li>
     <li><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2" transform="rotate(45 12 12)" class="cat-artic"/></svg>
       <span><b>Foco em articulação ou tendão</b> — a inflamação ficou ao redor da junta ou do tendão.</span></li>
     <li><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" class="cat-acomp"/></svg>
-      <span><b>Área acompanhada</b> — um lugar que a equipe ficou <b>observando de perto</b>.
+      <span><b>Área pulmonar acompanhada</b> — um lugar que a equipe ficou <b>observando de perto</b>.
         Acompanhar não é o mesmo que ter diagnóstico fechado.</span></li>
     <li><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" class="cat-osseo"/><circle cx="12" cy="12" r="11" class="cat-cir"/></svg>
       <span><b>Local tratado com cirurgia</b> — o anel branco marca onde foi feita a limpeza cirúrgica.</span></li>
@@ -1177,27 +1203,30 @@ body.book-ready .book-shell{display:grid}
 
   <p class="map-note"><b>Direita e esquerda são sempre as do Enzo</b>, não as de quem olha o desenho.
      Na vista de frente, o lado direito do Enzo aparece à esquerda da figura; na vista de costas, aparece à direita.</p>
+  </details>
 
-  <h3 class="sr-only">Lista dos lugares marcados</h3>
+  <details class="dobra">
+  <summary>Lista dos lugares marcados</summary>
   <ul class="icon-list" id="map-list">
     <li><span class="bullet b-red" aria-hidden="true">●</span><span><b>Escápula direita</b> — foco no osso, tratado com cirurgia.</span></li>
     <li><span class="bullet b-orange" aria-hidden="true">◆</span><span><b>3º dedo da mão direita</b> — foco em articulação/tendão, tratado com cirurgia.</span></li>
     <li><span class="bullet b-red" aria-hidden="true">●</span><span><b>Pé direito (3º metatarso)</b> — foco no osso, tratado com cirurgia.</span></li>
     <li><span class="bullet b-red" aria-hidden="true">●</span><span><b>Tíbia distal / tornozelo esquerdo</b> — foco no osso, tratado com cirurgia.</span></li>
-    <li><span class="bullet b-teal" aria-hidden="true">○</span><span><b>Pulmão esquerdo</b> — área acompanhada de perto pela equipe.</span></li>
+    <li><span class="bullet b-gold" aria-hidden="true">○</span><span><b>Pulmão esquerdo</b> — área acompanhada de perto pela equipe.</span></li>
   </ul>
+  </details>
 </article>
 
 <!-- ============ 6 · O QUE É OSTEOMIELITE ============ -->
 <article class="pg" id="pg-6" data-title="O que é osteomielite?" data-short="O que é osteomielite?">
-  <div class="pg-num" aria-hidden="true">6</div>
+  <div class="pg-num" aria-hidden="true">7</div>
   <h2>O que é osteomielite?</h2>
   <div class="cols">
     <div>
       <p>Osteomielite é quando uma infecção chega até um <strong>osso</strong>.</p>
       <p>Como os ossos são importantes para o corpo, isso precisa de atenção,
          tratamento forte e acompanhamento.</p>
-      <div class="art" data-art="osso" style="aspect-ratio:1.1">
+      <div class="art" data-art="osso" style="aspect-ratio:1.6">
         <div class="art-ph"><span class="em" aria-hidden="true">🦴</span><span>Osso em 3D — arraste para girar</span></div>
       </div>
     </div>
@@ -1215,7 +1244,7 @@ body.book-ready .book-shell{display:grid}
 
 <!-- ============ 7 · POR QUE EU FIZ CIRURGIA ============ -->
 <article class="pg" id="pg-7" data-title="Por que eu fiz cirurgia?" data-short="Por que eu fiz cirurgia?">
-  <div class="pg-num" aria-hidden="true">7</div>
+  <div class="pg-num" aria-hidden="true">8</div>
   <h2>Por que eu fiz cirurgia?</h2>
   <p>Em alguns lugares, a infecção formou secreção e inflamação mais forte.</p>
   <p>Nesses pontos, a cirurgia ajudou a:</p>
@@ -1230,7 +1259,7 @@ body.book-ready .book-shell{display:grid}
 
 <!-- ============ 8 · QUEM ESTÁ CUIDANDO (1) ============ -->
 <article class="pg" id="pg-8" data-title="Quem está cuidando de mim? (parte 1)" data-short="Quem está cuidando? (1)">
-  <div class="pg-num" aria-hidden="true">8</div>
+  <div class="pg-num" aria-hidden="true">9</div>
   <h2>Quem está cuidando de mim? <small>(parte 1)</small></h2>
   <p>Você tem uma equipe inteira ajudando na sua recuperação.</p>
   <div class="teams">
@@ -1251,7 +1280,7 @@ body.book-ready .book-shell{display:grid}
 
 <!-- ============ 9 · QUEM ESTÁ CUIDANDO (2) ============ -->
 <article class="pg" id="pg-9" data-title="Quem está cuidando de mim? (parte 2)" data-short="Quem está cuidando? (2)">
-  <div class="pg-num" aria-hidden="true">9</div>
+  <div class="pg-num" aria-hidden="true">10</div>
   <h2>Quem está cuidando de mim? <small>(parte 2)</small></h2>
   <p>Além das equipes principais, outras pessoas ajudam todos os dias na sua melhora.</p>
   <div class="teams">
@@ -1272,7 +1301,7 @@ body.book-ready .book-shell{display:grid}
 
 <!-- ============ 10 · PARA QUE SERVEM OS EXAMES ============ -->
 <article class="pg" id="pg-10" data-title="Para que servem os exames?" data-short="Para que servem os exames?">
-  <div class="pg-num" aria-hidden="true">10</div>
+  <div class="pg-num" aria-hidden="true">11</div>
   <h2>Para que servem os exames?</h2>
   <p>Cada exame é uma pista que ajuda a equipe a entender seu corpo.
      Toque em cada cartão para ver o que ele faz.</p>
@@ -1298,7 +1327,7 @@ body.book-ready .book-shell{display:grid}
 
 <!-- ============ 11 · O QUE SÃO OS ANTIBIÓTICOS ============ -->
 <article class="pg" id="pg-11" data-title="O que são os antibióticos?" data-short="O que são os antibióticos?">
-  <div class="pg-num" aria-hidden="true">11</div>
+  <div class="pg-num" aria-hidden="true">12</div>
   <h2>O que são os antibióticos?</h2>
   <p>Antibióticos são remédios especiais que ajudam a enfraquecer ou matar a bactéria.</p>
   <p>Eles trabalham <strong>junto com o seu corpo</strong> para combater a infecção.</p>
@@ -1321,7 +1350,7 @@ body.book-ready .book-shell{display:grid}
 
 <!-- ============ 12 · POR QUE EU FIQUEI TÃO CANSADO ============ -->
 <article class="pg" id="pg-12" data-title="Por que eu fiquei tão cansado?" data-short="Por que fiquei tão cansado?">
-  <div class="pg-num" aria-hidden="true">12</div>
+  <div class="pg-num" aria-hidden="true">13</div>
   <h2>Por que eu fiquei tão cansado?</h2>
   <p>Seu corpo gastou muita energia para enfrentar a infecção e se recuperar.</p>
   <div class="battery" id="battery" aria-hidden="true">
@@ -1338,7 +1367,7 @@ body.book-ready .book-shell{display:grid}
 
 <!-- ============ 13 · O QUE É ANEMIA ============ -->
 <article class="pg" id="pg-13" data-title="O que é anemia?" data-short="O que é anemia?">
-  <div class="pg-num" aria-hidden="true">13</div>
+  <div class="pg-num" aria-hidden="true">14</div>
   <h2>O que é anemia?</h2>
   <div class="cols">
     <div>
@@ -1352,7 +1381,7 @@ body.book-ready .book-shell{display:grid}
       </ul>
     </div>
     <div>
-      <div class="art" data-art="hemacia" style="aspect-ratio:1">
+      <div class="art" data-art="hemacia" style="aspect-ratio:1.7">
         <div class="art-ph"><span class="em" aria-hidden="true">🩸</span><span>Hemácias levando oxigênio</span></div>
       </div>
       <div class="card tint" style="--accent:var(--red)">
@@ -1364,7 +1393,7 @@ body.book-ready .book-shell{display:grid}
 
 <!-- ============ 14 · COMO SABEM QUE ESTOU MELHORANDO ============ -->
 <article class="pg" id="pg-14" data-title="Como os médicos sabem que estou melhorando?" data-short="Como sabem que estou melhorando?">
-  <div class="pg-num" aria-hidden="true">14</div>
+  <div class="pg-num" aria-hidden="true">15</div>
   <h2>Como os médicos sabem que estou melhorando?</h2>
   <p>Os médicos observam várias pistas ao mesmo tempo.</p>
   <ul class="icon-list">
@@ -1380,7 +1409,7 @@ body.book-ready .book-shell{display:grid}
 
 <!-- ============ 15 · COMO POSSO AJUDAR MEU CORPO ============ -->
 <article class="pg" id="pg-15" data-title="Como posso ajudar meu corpo?" data-short="Como posso ajudar meu corpo?">
-  <div class="pg-num" aria-hidden="true">15</div>
+  <div class="pg-num" aria-hidden="true">16</div>
   <h2>Como posso ajudar meu corpo?</h2>
   <p>Você também faz parte dessa missão! Marque o que você já conseguiu fazer hoje.</p>
 
@@ -1402,7 +1431,7 @@ body.book-ready .book-shell{display:grid}
 
 <!-- ============ 16 · CHECKPOINTS DA MISSÃO ============ -->
 <article class="pg" id="pg-16" data-title="Checkpoints da missão" data-short="Checkpoints da missão">
-  <div class="pg-num" aria-hidden="true">16</div>
+  <div class="pg-num" aria-hidden="true">17</div>
   <h2>Checkpoints da missão</h2>
   <p>Até aqui, sua jornada teve várias fases importantes.</p>
   <div class="phases">
@@ -1421,35 +1450,38 @@ body.book-ready .book-shell{display:grid}
 
 <!-- ============ 17 · O QUE JÁ MELHOROU ============ -->
 <article class="pg" id="pg-17" data-title="O que já melhorou?" data-short="O que já melhorou?">
-  <div class="pg-num" aria-hidden="true">17</div>
+  <div class="pg-num" aria-hidden="true">18</div>
   <h2>O que já melhorou?</h2>
   <p>Seus exames vêm mostrando sinais de melhora, e isso é muito importante para a recuperação.</p>
   <p>A inflamação no sangue — medida por um exame chamado <strong>PCR</strong> — foi
-     diminuindo ao longo dos dias. Isso é um dos sinais de que o tratamento está ajudando.</p>
+     diminuindo bastante ao longo dos dias. Isso é um dos sinais de que o tratamento está ajudando.</p>
 
   <div class="chart-box">
     <canvas id="pcr-canvas" width="640" height="320" aria-hidden="true"></canvas>
     <div class="chart-tip" id="pcr-tip"></div>
   </div>
 
-  <table class="data-table" id="pcr-table">
-    <caption>Inflamação no sangue (PCR) ao longo do tratamento —
-      <b>valores de exemplo, para trocar pelos exames reais</b></caption>
-    <thead><tr><th scope="col">Data</th><th scope="col">PCR (mg/dL)</th></tr></thead>
+  <table class="data-table sr-only" id="pcr-table">
+    <caption>Inflamação no sangue (PCR) ao longo do tratamento.
+      <b>Valores lidos do rascunho ilustrado e ainda por conferir com o laudo —
+      as datas em especial são aproximadas.</b></caption>
+    <thead><tr><th scope="col">Data</th><th scope="col">PCR (mg/L)</th></tr></thead>
     <tbody>
-      <tr><td>29/04</td><td>24,8</td></tr>
-      <tr><td>03/05</td><td>17,2</td></tr>
-      <tr><td>10/05</td><td>8,6</td></tr>
-      <tr><td>14/05</td><td>3,9</td></tr>
-      <tr><td>18/05</td><td>1,4</td></tr>
+      <tr><td>01/06</td><td>296,2</td></tr>
+      <tr><td>03/06</td><td>243,2</td></tr>
+      <tr><td>06/06</td><td>252,1</td></tr>
+      <tr><td>09/06</td><td>155,5</td></tr>
+      <tr><td>12/06</td><td>43,0</td></tr>
+      <tr><td>17/06</td><td>22,3</td></tr>
     </tbody>
   </table>
-  <p class="map-note">A linha descendo quer dizer que a inflamação está diminuindo. 📉</p>
+  <p class="map-note">A linha descendo quer dizer que a inflamação está diminuindo. 📉
+     <b>Valores lidos do rascunho ilustrado, ainda por conferir com o laudo.</b></p>
 </article>
 
 <!-- ============ 18 · PERGUNTAS QUE VOCÊ PODE TER ============ -->
 <article class="pg" id="pg-18" data-title="Perguntas que você pode ter" data-short="Perguntas que você pode ter">
-  <div class="pg-num" aria-hidden="true">18</div>
+  <div class="pg-num" aria-hidden="true">19</div>
   <h2>Perguntas que você pode ter</h2>
 
   <details class="faq"><summary>Por que eu fiquei na UTI?</summary>
@@ -1462,15 +1494,24 @@ body.book-ready .book-shell{display:grid}
     <p>Cada corpo tem o seu tempo. A equipe acompanha os exames e vai contando para você
        cada passo que já foi vencido.</p></details>
 
-  <h3>Missão relâmpago 🚀</h3>
-  <p>Cinco perguntinhas para ver o que você já descobriu. Aqui não existe resposta errada — só pistas novas.</p>
+  <details class="dobra">
+  <summary>Missão relâmpago 🚀</summary>
+  <p>Cinco perguntinhas para ver o que você já descobriu.
+     Aqui não existe resposta errada — só pistas novas.</p>
+  <div class="quiz-bar"><span class="quiz-step" id="quiz-step">1 de 5</span>
+    <span class="progress-track"><span class="progress-fill" id="quiz-fill"></span></span></div>
   <div class="quiz" id="quiz"></div>
+  <div class="btn-group quiz-nav">
+    <button class="btn" id="quiz-prev" type="button">‹ Anterior</button>
+    <button class="btn" id="quiz-next" type="button">Próxima ›</button>
+  </div>
   <div class="quiz-score" id="quiz-score" hidden></div>
+  </details>
 </article>
 
 <!-- ============ 19 · COMER, BEBER E GANHAR FORÇA ============ -->
 <article class="pg" id="pg-19" data-title="Comer, beber e ganhar força" data-short="Comer, beber e ganhar força">
-  <div class="pg-num" aria-hidden="true">19</div>
+  <div class="pg-num" aria-hidden="true">20</div>
   <h2>Comer, beber e ganhar força</h2>
   <p>Depois de uma infecção importante, o corpo precisa de energia para se recuperar.</p>
   <p>Comer melhor aos poucos, beber líquidos e descansar ajudam seu corpo a voltar a ter força.</p>
@@ -1497,7 +1538,7 @@ body.book-ready .book-shell{display:grid}
 
 <!-- ============ 20 · UMA MENSAGEM PARA VOCÊ ============ -->
 <article class="pg" id="pg-20" data-title="Uma mensagem para você" data-short="Uma mensagem para você">
-  <div class="pg-num" aria-hidden="true">20</div>
+  <div class="pg-num" aria-hidden="true">21</div>
   <h2>Uma mensagem para você</h2>
   <p class="lead">Você enfrentou dor, exames, remédios, cirurgias e dias difíceis.</p>
   <p>Mesmo assim, continuou seguindo em frente.</p>
@@ -1512,7 +1553,7 @@ body.book-ready .book-shell{display:grid}
 
 <!-- ============ 21 · MEU ESPAÇO ============ -->
 <article class="pg" id="pg-21" data-title="Meu espaço" data-short="Meu espaço">
-  <div class="pg-num" aria-hidden="true">21</div>
+  <div class="pg-num" aria-hidden="true">22</div>
   <h2>Meu espaço</h2>
   <p>Este espaço é seu. Escreva o que quiser — fica guardado só neste aparelho.
      <span class="saved" id="saved-flag">salvo ✓</span></p>
@@ -1543,16 +1584,35 @@ body.book-ready .book-shell{display:grid}
 
 <!-- ============ 22 · MISSÃO EM ANDAMENTO ============ -->
 <article class="pg" id="pg-22" data-title="Missão de cura em andamento" data-short="Missão em andamento">
-  <div class="pg-num" aria-hidden="true">22</div>
+  <div class="pg-num" aria-hidden="true">23</div>
   <h2>Missão de cura em andamento</h2>
   <p>Cada cuidado, exame, remédio e dia de descanso fazem parte da sua melhora.</p>
-  <p>Você está em um caminho de recuperação.</p>
+  <p>Ainda existem etapas pela frente, mas isso não significa que você está parado.</p>
+  <p>Seu corpo segue trabalhando, e você segue avançando.</p>
   <div class="seal">
     <div class="seal-badge" aria-hidden="true">🚀</div>
-    <div class="quote" style="width:100%">Você é muito forte!</div>
+    <div class="quote" style="width:100%">Você está em um caminho de recuperação.</div>
   </div>
-  <p class="map-note" style="margin-top:3cqi">Material educativo para o paciente e a família.
-     Inspirado no acolhimento do Hospital Pequeno Príncipe. Não é um documento oficial do hospital.</p>
+</article>
+
+<!-- ============ 23 · VOCÊ É MUITO FORTE ============ -->
+<article class="pg" id="pg-23" data-title="Você é muito forte!" data-short="Você é muito forte!">
+  <div class="pg-num" aria-hidden="true">24</div>
+  <h2>Você é muito forte!</h2>
+  <p class="lead">Ser forte não significa nunca sentir medo, dor ou cansaço.</p>
+  <p>Ser forte também é:</p>
+  <ul class="chips">
+    <li class="chip">➜ continuar</li>
+    <li class="chip">❤️ confiar</li>
+    <li class="chip">😴 descansar quando precisa</li>
+    <li class="chip">🤝 aceitar ajuda</li>
+    <li class="chip">👣 seguir um passo de cada vez</li>
+  </ul>
+  <p>Você passou por muita coisa. E mesmo assim segue em frente.</p>
+  <div class="seal">
+    <div class="seal-badge" aria-hidden="true">🏅</div>
+    <div class="quote" style="width:100%">Parabéns, Enzo. Você é muito forte!</div>
+  </div>
 </article>
 
 </main>
@@ -1845,8 +1905,11 @@ function jumpTo(i){
   if(document.startViewTransition && !reduced.matches){
     spreadEl.style.viewTransitionName = 'page';
     var t = document.startViewTransition(apply);
-    t.finished.then(function(){ spreadEl.style.viewTransitionName = ''; })
-             .catch(function(){ spreadEl.style.viewTransitionName = ''; });
+    var solta = function(){ spreadEl.style.viewTransitionName = ''; };
+    t.finished.then(solta).catch(solta);
+    // Se a transição não se encerrar, o navegador continua mostrando o retrato
+    // da página antiga: o DOM já mudou, mas a tela fica congelada. Corta fora.
+    setTimeout(function(){ try{ t.skipTransition(); }catch(e){} solta(); }, 700);
   } else apply();
 }
 
@@ -1937,11 +2000,13 @@ window.addEventListener('orientationchange', function(){ setTimeout(decideLayout
 /* ---------- miniaturas e índice ---------- */
 (function(){
   var thumbs = $('#thumbs'), toc = $('#toc-list');
+  var cnt = document.getElementById('toc-count');
+  if(cnt) cnt.textContent = String(pages.length);
   pages.forEach(function(p, i){
     var t = document.createElement('button');
     t.className = 'thumb'; t.type = 'button';
     t.innerHTML = '<span class="fav" aria-hidden="true">♥</span>' +
-                  '<span class="thumb-n">' + (i===0 ? 'Capa' : i) + '</span>' +
+                  '<span class="thumb-n">' + (i===0 ? 'Capa' : i+1) + '</span>' +
                   '<span class="thumb-t"></span>';
     $('.thumb-t', t).textContent = p.dataset.short || p.dataset.title;
     t.setAttribute('aria-label', 'Ir para a página ' + (i+1) + ': ' + p.dataset.title);
@@ -1951,7 +2016,7 @@ window.addEventListener('orientationchange', function(){ setTimeout(decideLayout
     var li = document.createElement('li');
     var b = document.createElement('button');
     b.type = 'button';
-    b.innerHTML = '<span class="n">' + (i===0 ? '·' : i) + '</span><span class="ttl"></span>' +
+    b.innerHTML = '<span class="n">' + (i+1) + '</span><span class="ttl"></span>' +
                   '<span class="fav-dot" hidden aria-label="favorita">♥</span>';
     $('.ttl', b).textContent = p.dataset.title;
     b.addEventListener('click', function(){ jumpTo(i); $('#panel-toc').close(); });
@@ -2084,7 +2149,7 @@ var QUIZ = [
   var CAT = {
     osseo:{ nome:'Foco no osso confirmado', cor:'#d8342a' },
     artic:{ nome:'Foco em articulação / tendão', cor:'#e07d10' },
-    acomp:{ nome:'Área acompanhada', cor:'#1a7fd4' }
+    acomp:{ nome:'Área pulmonar acompanhada', cor:'#c98a00' }
   };
 
   function marker(s, n){
@@ -2193,7 +2258,7 @@ var QUIZ = [
     pts = PCR.map(function(p,i){ return { x:X(i), y:Y(p.v), d:p.d, v:p.v }; });
 
     /* faixa esperada (PCR baixa) */
-    var band = Y(0.5);
+    var band = Y(5);
     g.fillStyle = 'rgba(31,157,104,.16)';
     g.fillRect(padL, band, iw, padT + ih - band);
     g.fillStyle = 'rgba(31,157,104,.9)';
@@ -2207,7 +2272,7 @@ var QUIZ = [
     g.fillStyle = ink; g.font = '600 10px ' + (css('--font-body') || 'sans-serif');
     g.textAlign = 'right';
     [0, max/2, max].forEach(function(v){
-      g.fillText(v.toFixed(1), padL - 6, Y(v) + 3);
+      g.fillText(max >= 20 ? v.toFixed(0) : v.toFixed(1), padL - 6, Y(v) + 3);
       g.strokeStyle = line; g.beginPath(); g.moveTo(padL, Y(v)); g.lineTo(padL+iw, Y(v)); g.stroke();
     });
     g.textAlign = 'center';
@@ -2314,7 +2379,21 @@ var QUIZ = [
 
     save.quiz[qi] = right ? 1 : 0;
     persist(); tally();
+    if(qi < QUIZ.length-1) setTimeout(function(){ mostrar(qi+1); }, 1400);
   }
+
+  var atual = 0;
+  function mostrar(n){
+    var qs = $$('.q', box);
+    atual = Math.max(0, Math.min(qs.length-1, n));
+    qs.forEach(function(q,i){ q.classList.toggle('atual', i===atual); });
+    $('#quiz-step').textContent = (atual+1) + ' de ' + qs.length;
+    $('#quiz-fill').style.width = (100*(atual+1)/qs.length) + '%';
+    $('#quiz-prev').disabled = atual === 0;
+    $('#quiz-next').disabled = atual === qs.length-1;
+  }
+  $('#quiz-prev').addEventListener('click', function(){ mostrar(atual-1); });
+  $('#quiz-next').addEventListener('click', function(){ mostrar(atual+1); });
 
   function tally(){
     var done = Object.keys(save.quiz).length;
@@ -2335,6 +2414,7 @@ var QUIZ = [
     fb.className = 'q-fb on ' + (save.quiz[k] ? 'ok' : 'hm');
     fb.textContent = (save.quiz[k] ? '✅ ' : '💡 Quase! Olha só: ') + item.fb;
   });
+  mostrar(0);
   tally();
 })();
 

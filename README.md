@@ -3,7 +3,7 @@
 Livro interativo em HTML5 que explica ao Enzo — e à família — o que aconteceu no corpo dele:
 a infecção por *Staphylococcus aureus*, a osteomielite, os exames, as cirurgias e a recuperação.
 
-São 23 páginas em português, com virada de página em 3D, narração em voz alta, mapa corporal
+São 24 páginas em português, com virada de página em 3D, narração em voz alta, mapa corporal
 interativo, gráfico da inflamação, quiz, checklist e um espaço pessoal para escrever.
 
 Material educativo para o paciente e a família, inspirado no acolhimento do Hospital Pequeno
@@ -47,7 +47,7 @@ conta ou rastreamento. Limpar os dados do navegador apaga tudo.
 Os dados ficam todos juntos no topo do bloco de módulos do `index.html`, marcados com
 `DADOS CLÍNICOS`. Procure por `var SITES` para achar a seção.
 
-### `SITES` — as marcas do mapa corporal (página 5)
+### `SITES` — as marcas do mapa corporal (página 6)
 
 ```js
 { id:'escapula', view:'posterior', side:'direita', cat:'osseo', cir:true, x:76, y:52,
@@ -59,7 +59,7 @@ Os dados ficam todos juntos no topo do bloco de módulos do `index.html`, marcad
 |---|---|
 | `view` | `'frontal'` ou `'posterior'` — em qual desenho a marca aparece |
 | `side` | lado **do Enzo**: `'direita'` ou `'esquerda'` |
-| `cat` | `'osseo'` foco no osso confirmado · `'artic'` articulação/tendão · `'acomp'` **área apenas acompanhada** |
+| `cat` | `'osseo'` foco no osso confirmado (vermelho) · `'artic'` articulação/tendão (laranja) · `'acomp'` **área apenas acompanhada** (âmbar) |
 | `cir` | `true` se o local foi abordado cirurgicamente (desenha o anel branco) |
 | `x`,`y` | posição no desenho, no sistema `viewBox="0 0 120 200"` |
 
@@ -75,18 +75,23 @@ fechado**, e o mapa mostra isso por cor, por forma do marcador e por texto — n
 > ⚠️ Confira a tabela contra o prontuário antes de entregar o livro. Os valores que estão lá
 > vieram dos mockups, não de um registro clínico.
 
-### `PCR` — o gráfico da página 17
+### `PCR` — o gráfico da página 18
 
-O gráfico é desenhado a partir da **tabela HTML** da própria página 17 (`id="pcr-table"`),
+O gráfico é desenhado a partir da **tabela HTML** da própria página 18 (`id="pcr-table"`),
 para não existir o mesmo dado em dois lugares. Edite as linhas da tabela e o gráfico acompanha.
 
-> ⚠️ Os valores que estão lá são **exemplo**. Troque pelos exames reais e ajuste o texto da
-> legenda da tabela.
+A tabela fica escondida visualmente (`sr-only`) porque o gráfico já mostra os mesmos dados —
+ela continua existindo para quem usa leitor de tela.
 
-### `QUIZ` — as cinco perguntas da página 18
+> ⚠️ Os valores que estão lá foram **lidos dos diagramas ilustrados**, em mg/L, e ainda não
+> foram conferidos com o laudo. As datas em especial são aproximadas. Troque pelos exames
+> reais antes de entregar o livro.
+
+### `QUIZ` — as cinco perguntas da página 19
 
 Cada item tem a pergunta, as alternativas, o índice da certa (`ok`, começando em zero) e o
 texto de retorno. O quiz é acolhedor de propósito: nunca diz "errado", diz "Quase! Olha só".
+Ele aparece uma pergunta por vez, dentro de um bloco recolhível, para a página não estourar.
 
 ---
 
